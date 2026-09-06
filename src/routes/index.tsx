@@ -161,7 +161,7 @@ function Index() {
               <Button
                 className="w-full rounded-xl"
                 disabled={query.isFetching}
-                onClick={() => setRequest({ play, nonce: Date.now() })}
+                onClick={() => setRequest({ play, geography, nonce: Date.now() })}
               >
                 Calculate
               </Button>

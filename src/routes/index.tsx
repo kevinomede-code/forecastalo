@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
+import { ClientOnly } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import type { MapFocus, ScoreRow } from "@/lib/score-types";
 import {
   Select,
   SelectContent,
@@ -11,6 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const ScoreMap = lazy(() => import("@/components/ScoreMap"));
+
 
 export const Route = createFileRoute("/")({
   head: () => ({

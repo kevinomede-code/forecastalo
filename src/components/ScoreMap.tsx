@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import type { Feature, FeatureCollection, Point } from "geojson";
 import type { Breakdown, MapFocus, ScoreRow } from "@/lib/score-types";
 
 const SCORE_RAMP = [
@@ -37,7 +38,7 @@ const CLUSTER_RAMP = [
 
 const SOURCE_ID = "zones";
 
-function toGeoJSON(rows: ScoreRow[]): GeoJSON.FeatureCollection {
+function toGeoJSON(rows: ScoreRow[]): FeatureCollection {
   return {
     type: "FeatureCollection",
     features: rows
@@ -212,7 +213,7 @@ export default function ScoreMap({ rows, focus }: { rows: ScoreRow[]; focus: Map
       source.getClusterExpansionZoom(clusterId, (err, zoom) => {
         if (err || zoom == null) return;
         map.easeTo({
-          center: (feature.geometry as GeoJSON.Point).coordinates as [number, number],
+          center: (feature.geometry as Point).coordinates as [number, number],
           zoom,
           duration: 600,
         });
@@ -223,7 +224,7 @@ export default function ScoreMap({ rows, focus }: { rows: ScoreRow[]; focus: Map
       const feature = e.features?.[0];
       if (!feature) return;
       popup
-        .setLngLat((feature.geometry as GeoJSON.Point).coordinates as [number, number])
+        .setLngLat((feature.geometry as Point).coordinates as [number, number])
         .setHTML(popupHtml(feature.properties ?? {}))
         .addTo(map);
     });

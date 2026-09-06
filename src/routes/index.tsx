@@ -13,8 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AskPanel from "@/components/AskPanel";
 
 const ScoreMap = lazy(() => import("@/components/ScoreMap"));
+
 
 
 export const Route = createFileRoute("/")({

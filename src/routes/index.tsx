@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
+import { ClientOnly } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import type { MapFocus, ScoreRow } from "@/lib/score-types";
 import {
   Select,
   SelectContent,
@@ -11,6 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const ScoreMap = lazy(() => import("@/components/ScoreMap"));
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -35,49 +40,66 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type ScoreRow = {
-  id: string;
-  play: string;
-  score_total: number | null;
-  recommendation: string | null;
-  zones: { name: string } | null;
-};
-
 const PLAYS = [
   { value: "housing_energy", label: "Housing + Energy (PV + heat pump)", disabled: false },
   { value: "ev_charging", label: "EV Charging & Mobility", disabled: true },
   { value: "energy_community", label: "Energy Community", disabled: true },
 ];
 
+const LEVEL_BY_GEOGRAPHY: Record<string, string> = {
+  provinces_italy: "province",
+  municipalities_piemonte: "municipality",
+};
+
+const PAGE_SIZE = 1000;
+
 function Index() {
   const [play, setPlay] = useState("housing_energy");
   const [geography, setGeography] = useState("provinces_italy");
   const [horizon, setHorizon] = useState("3");
-  const [request, setRequest] = useState<{ play: string; nonce: number } | null>(null);
+  const [request, setRequest] = useState<{
+    play: string;
+    geography: string;
+    nonce: number;
+  } | null>(null);
+  const [focus, setFocus] = useState<MapFocus>(null);
 
   const query = useQuery({
-    queryKey: ["scores", request?.play, request?.nonce],
+    queryKey: ["scores", request?.play, request?.geography, request?.nonce],
     enabled: request !== null,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("scores")
-        .select("id, play, score_total, recommendation, zones(name)")
-        .eq("play", request!.play)
-        .order("score_total", { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return (data ?? []) as unknown as ScoreRow[];
+      const level = LEVEL_BY_GEOGRAPHY[request!.geography] ?? "province";
+      const all: ScoreRow[] = [];
+      // Supabase caps responses at 1000 rows, so page through the results.
+      for (let from = 0; ; from += PAGE_SIZE) {
+        const { data, error } = await supabase
+          .from("scores")
+          .select(
+            "zone_id, score_total, breakdown, recommendation, zones!inner(name, level, latitude, longitude)",
+          )
+          .eq("play", request!.play)
+          .eq("zones.level", level)
+          .order("score_total", { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        const page = (data ?? []) as unknown as ScoreRow[];
+        all.push(...page);
+        if (page.length < PAGE_SIZE) break;
+      }
+      return all;
     },
   });
 
   const results = query.data ?? [];
+  const topResults = results.slice(0, 50);
 
   let systemMessage = "Ready.";
   if (query.isFetching) systemMessage = "Calculating…";
   else if (query.isError) systemMessage = "Could not load scores. Please try again.";
   else if (request && results.length > 0)
-    systemMessage = `${results.length} zones scored.`;
+    systemMessage = `${results.length} zones scored — showing top ${topResults.length}.`;
   else if (request) systemMessage = "No scores yet.";
+
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
@@ -139,7 +161,7 @@ function Index() {
               <Button
                 className="w-full rounded-xl"
                 disabled={query.isFetching}
-                onClick={() => setRequest({ play, nonce: Date.now() })}
+                onClick={() => setRequest({ play, geography, nonce: Date.now() })}
               >
                 Calculate
               </Button>
@@ -163,14 +185,15 @@ function Index() {
               ) : null}
 
               <ul className="grid gap-3">
-                {results.map((row, i) => {
+                {topResults.map((row, i) => {
                   const score = row.score_total ?? 0;
                   const high = score >= 70;
                   return (
                     <li
-                      key={row.id}
-                      className="animate-fade-in-up rounded-xl border border-border bg-card p-4 shadow-soft"
+                      key={row.zone_id}
+                      className="animate-fade-in-up cursor-pointer rounded-xl border border-border bg-card p-4 shadow-soft transition-colors hover:border-highlight/40"
                       style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}
+                      onClick={() => setFocus({ zoneId: row.zone_id, nonce: Date.now() })}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <span className="truncate text-sm font-medium">
@@ -198,9 +221,24 @@ function Index() {
         </section>
 
         <section className="min-h-0 w-[60%]">
-          <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-muted shadow-soft">
-            <span className="text-sm font-medium text-muted-foreground">Map</span>
-          </div>
+          <ClientOnly
+            fallback={
+              <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-muted shadow-soft">
+                <span className="text-sm font-medium text-muted-foreground">Map</span>
+              </div>
+            }
+          >
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-muted shadow-soft">
+                  <span className="text-sm font-medium text-muted-foreground">Map</span>
+                </div>
+              }
+            >
+              <ScoreMap rows={results} focus={focus} />
+            </Suspense>
+          </ClientOnly>
+
         </section>
       </main>
     </div>

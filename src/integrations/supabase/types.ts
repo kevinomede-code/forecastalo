@@ -14,7 +14,217 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      data_sources: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          granularity: string | null
+          id: string
+          is_active: boolean
+          licence: string | null
+          name: string
+          update_frequency: string | null
+          url: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          granularity?: string | null
+          id?: string
+          is_active?: boolean
+          licence?: string | null
+          name: string
+          update_frequency?: string | null
+          url?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          granularity?: string | null
+          id?: string
+          is_active?: boolean
+          licence?: string | null
+          name?: string
+          update_frequency?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
+      forecasts: {
+        Row: {
+          created_at: string
+          horizon_months: number
+          id: string
+          indicator_code: string
+          lower_bound: number | null
+          model_version: string | null
+          period: string
+          upper_bound: number | null
+          value_forecast: number | null
+          zone_id: string
+        }
+        Insert: {
+          created_at?: string
+          horizon_months: number
+          id?: string
+          indicator_code: string
+          lower_bound?: number | null
+          model_version?: string | null
+          period: string
+          upper_bound?: number | null
+          value_forecast?: number | null
+          zone_id: string
+        }
+        Update: {
+          created_at?: string
+          horizon_months?: number
+          id?: string
+          indicator_code?: string
+          lower_bound?: number | null
+          model_version?: string | null
+          period?: string
+          upper_bound?: number | null
+          value_forecast?: number | null
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forecasts_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      indicators: {
+        Row: {
+          created_at: string
+          id: string
+          indicator_code: string
+          period: string
+          source_id: string | null
+          unit: string | null
+          value: number | null
+          zone_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          indicator_code: string
+          period: string
+          source_id?: string | null
+          unit?: string | null
+          value?: number | null
+          zone_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          indicator_code?: string
+          period?: string
+          source_id?: string | null
+          unit?: string | null
+          value?: number | null
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indicators_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "data_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "indicators_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scores: {
+        Row: {
+          breakdown: Json | null
+          computed_at: string
+          id: string
+          play: string
+          recommendation: string | null
+          score_total: number | null
+          zone_id: string
+        }
+        Insert: {
+          breakdown?: Json | null
+          computed_at?: string
+          id?: string
+          play: string
+          recommendation?: string | null
+          score_total?: number | null
+          zone_id: string
+        }
+        Update: {
+          breakdown?: Json | null
+          computed_at?: string
+          id?: string
+          play?: string
+          recommendation?: string | null
+          score_total?: number | null
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scores_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zones: {
+        Row: {
+          created_at: string
+          id: string
+          latitude: number | null
+          level: string
+          longitude: number | null
+          name: string
+          parent_zone_code: string | null
+          population: number | null
+          region: string | null
+          zone_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          level: string
+          longitude?: number | null
+          name: string
+          parent_zone_code?: string | null
+          population?: number | null
+          region?: string | null
+          zone_code: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          level?: string
+          longitude?: number | null
+          name?: string
+          parent_zone_code?: string | null
+          population?: number | null
+          region?: string | null
+          zone_code?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

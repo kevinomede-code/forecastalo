@@ -185,14 +185,15 @@ function Index() {
               ) : null}
 
               <ul className="grid gap-3">
-                {results.map((row, i) => {
+                {topResults.map((row, i) => {
                   const score = row.score_total ?? 0;
                   const high = score >= 70;
                   return (
                     <li
-                      key={row.id}
-                      className="animate-fade-in-up rounded-xl border border-border bg-card p-4 shadow-soft"
+                      key={row.zone_id}
+                      className="animate-fade-in-up cursor-pointer rounded-xl border border-border bg-card p-4 shadow-soft transition-colors hover:border-highlight/40"
                       style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}
+                      onClick={() => setFocus({ zoneId: row.zone_id, nonce: Date.now() })}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <span className="truncate text-sm font-medium">
@@ -220,9 +221,24 @@ function Index() {
         </section>
 
         <section className="min-h-0 w-[60%]">
-          <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-muted shadow-soft">
-            <span className="text-sm font-medium text-muted-foreground">Map</span>
-          </div>
+          <ClientOnly
+            fallback={
+              <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-muted shadow-soft">
+                <span className="text-sm font-medium text-muted-foreground">Map</span>
+              </div>
+            }
+          >
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-muted shadow-soft">
+                  <span className="text-sm font-medium text-muted-foreground">Map</span>
+                </div>
+              }
+            >
+              <ScoreMap rows={results} focus={focus} />
+            </Suspense>
+          </ClientOnly>
+
         </section>
       </main>
     </div>

@@ -40,49 +40,66 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type ScoreRow = {
-  id: string;
-  play: string;
-  score_total: number | null;
-  recommendation: string | null;
-  zones: { name: string } | null;
-};
-
 const PLAYS = [
   { value: "housing_energy", label: "Housing + Energy (PV + heat pump)", disabled: false },
   { value: "ev_charging", label: "EV Charging & Mobility", disabled: true },
   { value: "energy_community", label: "Energy Community", disabled: true },
 ];
 
+const LEVEL_BY_GEOGRAPHY: Record<string, string> = {
+  provinces_italy: "province",
+  municipalities_piemonte: "municipality",
+};
+
+const PAGE_SIZE = 1000;
+
 function Index() {
   const [play, setPlay] = useState("housing_energy");
   const [geography, setGeography] = useState("provinces_italy");
   const [horizon, setHorizon] = useState("3");
-  const [request, setRequest] = useState<{ play: string; nonce: number } | null>(null);
+  const [request, setRequest] = useState<{
+    play: string;
+    geography: string;
+    nonce: number;
+  } | null>(null);
+  const [focus, setFocus] = useState<MapFocus>(null);
 
   const query = useQuery({
-    queryKey: ["scores", request?.play, request?.nonce],
+    queryKey: ["scores", request?.play, request?.geography, request?.nonce],
     enabled: request !== null,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("scores")
-        .select("id, play, score_total, recommendation, zones(name)")
-        .eq("play", request!.play)
-        .order("score_total", { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return (data ?? []) as unknown as ScoreRow[];
+      const level = LEVEL_BY_GEOGRAPHY[request!.geography] ?? "province";
+      const all: ScoreRow[] = [];
+      // Supabase caps responses at 1000 rows, so page through the results.
+      for (let from = 0; ; from += PAGE_SIZE) {
+        const { data, error } = await supabase
+          .from("scores")
+          .select(
+            "zone_id, score_total, breakdown, recommendation, zones!inner(name, level, latitude, longitude)",
+          )
+          .eq("play", request!.play)
+          .eq("zones.level", level)
+          .order("score_total", { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        const page = (data ?? []) as unknown as ScoreRow[];
+        all.push(...page);
+        if (page.length < PAGE_SIZE) break;
+      }
+      return all;
     },
   });
 
   const results = query.data ?? [];
+  const topResults = results.slice(0, 50);
 
   let systemMessage = "Ready.";
   if (query.isFetching) systemMessage = "Calculating…";
   else if (query.isError) systemMessage = "Could not load scores. Please try again.";
   else if (request && results.length > 0)
-    systemMessage = `${results.length} zones scored.`;
+    systemMessage = `${results.length} zones scored — showing top ${topResults.length}.`;
   else if (request) systemMessage = "No scores yet.";
+
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">

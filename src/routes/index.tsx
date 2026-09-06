@@ -13,8 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AskPanel from "@/components/AskPanel";
 
 const ScoreMap = lazy(() => import("@/components/ScoreMap"));
+
 
 
 export const Route = createFileRoute("/")({
@@ -169,55 +172,87 @@ function Index() {
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-border bg-panel shadow-soft">
-            <p className="shrink-0 border-b border-border px-5 py-3 text-sm text-muted-foreground">
-              {systemMessage}
-            </p>
+            <Tabs
+              defaultValue="results"
+              className="flex min-h-0 flex-1 flex-col gap-0"
+            >
+              <TabsList className="mx-4 mt-3 h-auto shrink-0 self-start rounded-xl bg-muted p-1">
+                <TabsTrigger value="results" className="rounded-lg px-3 py-1 text-xs">
+                  Results
+                </TabsTrigger>
+                <TabsTrigger value="ask" className="rounded-lg px-3 py-1 text-xs">
+                  Ask
+                </TabsTrigger>
+              </TabsList>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">
-              {request && !query.isFetching && !query.isError && results.length === 0 ? (
-                <div className="mx-auto mt-10 max-w-xs text-center">
-                  <p className="text-sm font-medium">No scores computed yet</p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    The database is set up, but no zones have been scored so far. Results
-                    will appear here once data is loaded.
-                  </p>
-                </div>
-              ) : null}
+              <TabsContent
+                value="results"
+                className="mt-3 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden"
+              >
+                <p className="shrink-0 border-y border-border px-5 py-3 text-sm text-muted-foreground">
+                  {systemMessage}
+                </p>
 
-              <ul className="grid gap-3">
-                {topResults.map((row, i) => {
-                  const score = row.score_total ?? 0;
-                  const high = score >= 70;
-                  return (
-                    <li
-                      key={row.zone_id}
-                      className="animate-fade-in-up cursor-pointer rounded-xl border border-border bg-card p-4 shadow-soft transition-colors hover:border-highlight/40"
-                      style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}
-                      onClick={() => setFocus({ zoneId: row.zone_id, nonce: Date.now() })}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="truncate text-sm font-medium">
-                          {row.zones?.name ?? "Unknown zone"}
-                        </span>
-                        <span
-                          className={
-                            high
-                              ? "rounded-full bg-highlight-soft px-2.5 py-1 text-xs font-semibold text-highlight"
-                              : "rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground"
-                          }
-                        >
-                          {score.toFixed(1)}
-                        </span>
-                      </div>
+                <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                  {request && !query.isFetching && !query.isError && results.length === 0 ? (
+                    <div className="mx-auto mt-10 max-w-xs text-center">
+                      <p className="text-sm font-medium">No scores computed yet</p>
                       <p className="mt-2 text-sm text-muted-foreground">
-                        {row.recommendation ?? "No recommendation available."}
+                        The database is set up, but no zones have been scored so far. Results
+                        will appear here once data is loaded.
                       </p>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
+                    </div>
+                  ) : null}
+
+                  <ul className="grid gap-3">
+                    {topResults.map((row, i) => {
+                      const score = row.score_total ?? 0;
+                      const high = score >= 70;
+                      return (
+                        <li
+                          key={row.zone_id}
+                          className="animate-fade-in-up cursor-pointer rounded-xl border border-border bg-card p-4 shadow-soft transition-colors hover:border-highlight/40"
+                          style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}
+                          onClick={() => setFocus({ zoneId: row.zone_id, nonce: Date.now() })}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="truncate text-sm font-medium">
+                              {row.zones?.name ?? "Unknown zone"}
+                            </span>
+                            <span
+                              className={
+                                high
+                                  ? "rounded-full bg-highlight-soft px-2.5 py-1 text-xs font-semibold text-highlight"
+                                  : "rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground"
+                              }
+                            >
+                              {score.toFixed(1)}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            {row.recommendation ?? "No recommendation available."}
+                          </p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </TabsContent>
+
+              <TabsContent
+                value="ask"
+                className="mt-3 flex min-h-0 flex-1 flex-col border-t border-border data-[state=inactive]:hidden"
+              >
+                <AskPanel
+                  play={play}
+                  level={
+                    (LEVEL_BY_GEOGRAPHY[geography] ?? "province") as "province" | "municipality"
+                  }
+                />
+              </TabsContent>
+            </Tabs>
           </div>
+
         </section>
 
         <section className="min-h-0 w-[60%]">

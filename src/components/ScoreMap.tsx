@@ -206,7 +206,7 @@ export default function ScoreMap({ rows, focus }: { rows: ScoreRow[]; focus: Map
     });
 
     map.on("click", "clusters", (e) => {
-      const feature = map.queryRenderedFeatures(e.point, { layers: ["clusters"] })[0];
+      const feature = map.queryRenderedFeatures(e.point, { layers: ["clusters"] })[0] as unknown as Feature<Point> | undefined;
       if (!feature) return;
       const clusterId = feature.properties?.['cluster_id'];
       const source = map.getSource(SOURCE_ID) as mapboxgl.GeoJSONSource;
@@ -221,7 +221,7 @@ export default function ScoreMap({ rows, focus }: { rows: ScoreRow[]; focus: Map
     });
 
     map.on("click", "points", (e) => {
-      const feature = e.features?.[0];
+      const feature = e.features?.[0] as unknown as Feature<Point> | undefined;
       if (!feature) return;
       popup
         .setLngLat((feature.geometry as Point).coordinates as [number, number])

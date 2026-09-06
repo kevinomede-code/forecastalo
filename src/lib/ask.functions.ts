@@ -55,19 +55,6 @@ function candidateNames(question: string): string[] {
   return Array.from(new Set(words)).slice(0, 8);
 }
 
-type NumberStats = { min: number; max: number; avg: number; count: number };
-
-function stats(values: number[]): NumberStats | null {
-  if (values.length === 0) return null;
-  const sum = values.reduce((a, b) => a + b, 0);
-  return {
-    min: round(Math.min(...values)),
-    max: round(Math.max(...values)),
-    avg: round(sum / values.length),
-    count: values.length,
-  };
-}
-
 function round(n: number) {
   return Math.round(n * 100) / 100;
 }
@@ -159,41 +146,10 @@ export const askQuestion = createServerFn({ method: "POST" })
       .order("score_total", { ascending: false })
       .limit(15);
 
-    const allScores: number[] = [];
-    for (let from = 0; ; from += 1000) {
-      const { data: page } = await supabaseAdmin
-        .from("scores")
-        .select("score_total, zones!inner(level)")
-        .eq("play", play)
-        .eq("zones.level", level)
-        .range(from, from + 999);
-      const rows = page ?? [];
-      for (const row of rows) if (row.score_total !== null) allScores.push(Number(row.score_total));
-      if (rows.length < 1000) break;
-    }
-
-    const indicatorValues: Record<string, { values: number[]; unit: string | null }> = {};
-    for (let from = 0; ; from += 1000) {
-      const { data: page } = await supabaseAdmin
-        .from("indicators")
-        .select("indicator_code, value, unit, period, zones!inner(level)")
-        .eq("zones.level", level)
-        .range(from, from + 999);
-      const rows = page ?? [];
-      for (const row of rows) {
-        if (row.value === null) continue;
-        if (row.indicator_code === "population" && !String(row.period).startsWith("2026")) continue;
-        const bucket = (indicatorValues[row.indicator_code] ??= { values: [], unit: row.unit });
-        bucket.values.push(Number(row.value));
-      }
-      if (rows.length < 1000) break;
-      if (from > 20000) break;
-    }
-
-    const indicatorStats: Record<string, unknown> = {};
-    for (const [code, bucket] of Object.entries(indicatorValues)) {
-      indicatorStats[code] = { unit: bucket.unit, ...(stats(bucket.values) ?? {}) };
-    }
+    const { data: statsData } = await supabaseAdmin.rpc("context_stats", {
+      p_play: play,
+      p_level: level,
+    });
 
     const context = {
       play,
@@ -205,10 +161,10 @@ export const askQuestion = createServerFn({ method: "POST" })
         breakdown: row.breakdown,
         recommendation: row.recommendation,
       })),
-      summary: {
-        zones_scored: allScores.length,
-        score: stats(allScores),
-        indicators: indicatorStats,
+      summary: statsData ?? {
+        zones_scored: 0,
+        score: {},
+        indicators: {},
       },
     };
 

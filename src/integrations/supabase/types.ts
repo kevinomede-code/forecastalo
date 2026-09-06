@@ -230,7 +230,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      context_stats: {
+        Args: { p_level: string; p_play: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

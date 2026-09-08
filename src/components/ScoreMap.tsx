@@ -242,7 +242,7 @@ export default function ScoreMap({
     const popup = new mapboxgl.Popup({
       closeButton: true,
       closeOnClick: true,
-      maxWidth: "20rem",
+      maxWidth: "22rem",
       className: "forecastalo-popup",
     });
     popupRef.current = popup;

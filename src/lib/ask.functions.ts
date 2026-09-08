@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { Json } from "@/integrations/supabase/types";
 
 const AskInput = z.object({
   question: z.string().min(1).max(2000),
@@ -78,7 +79,12 @@ export const askQuestion = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) {
-      return { answer: null, error: "The AI assistant is not configured yet." };
+      return {
+        answer: null,
+        error: "The AI assistant is not configured yet.",
+        zones_used: [],
+        notes_used: [],
+      };
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -89,18 +95,37 @@ export const askQuestion = createServerFn({ method: "POST" })
 
     // ---- 1. Zones mentioned in the question -------------------------------
     const names = candidateNames(question);
-    let matchedZones: Array<{ id: string; name: string; level: string; region: string | null }> = [];
+    let matchedZones: Array<{
+      id: string;
+      name: string;
+      level: string;
+      region: string | null;
+      latitude: number | null;
+      longitude: number | null;
+    }> = [];
     if (names.length > 0) {
       const orFilter = names.map((n) => `name.ilike.%${n.replace(/[,%]/g, "")}%`).join(",");
       const { data: zoneRows } = await supabaseAdmin
         .from("zones")
-        .select("id, name, level, region")
+        .select("id, name, level, region, latitude, longitude")
         .or(orFilter)
         .limit(6);
       matchedZones = zoneRows ?? [];
     }
 
     const zoneDetails: unknown[] = [];
+    const zonesUsed: Array<{
+      zone_id: string;
+      score_total: number | null;
+      recommendation: string | null;
+      breakdown: Json;
+      zones: {
+        name: string;
+        level: string;
+        latitude: number | null;
+        longitude: number | null;
+      };
+    }> = [];
     for (const zone of matchedZones) {
       const [{ data: scoreRows }, { data: indicatorRows }] = await Promise.all([
         supabaseAdmin
@@ -135,6 +160,19 @@ export const askQuestion = createServerFn({ method: "POST" })
         }
       }
 
+      zonesUsed.push({
+        zone_id: zone.id,
+        score_total: scoreRows?.[0]?.score_total ?? null,
+        recommendation: scoreRows?.[0]?.recommendation ?? null,
+        breakdown: (scoreRows?.[0]?.breakdown ?? null) as Json,
+        zones: {
+          name: zone.name,
+          level: zone.level,
+          latitude: zone.latitude,
+          longitude: zone.longitude,
+        },
+      });
+
       zoneDetails.push({
         name: zone.name,
         level: zone.level,
@@ -164,6 +202,16 @@ export const askQuestion = createServerFn({ method: "POST" })
       supabaseAdmin.rpc("context_stats", { p_play: play, p_level: level }),
       supabaseAdmin.rpc("kg_search", { q: question, max_nodes: 6 }),
     ]);
+
+    const matchedNotes = (
+      (kgData as { matched?: unknown } | null)?.matched ?? []
+    ) as Array<{ slug: string; title: string; kind: string; summary: string | null }>;
+    const notesUsed = matchedNotes.map((note) => ({
+      slug: note.slug,
+      title: note.title,
+      kind: note.kind,
+      summary: note.summary ?? null,
+    }));
 
     const context = {
       play,
@@ -197,16 +245,36 @@ export const askQuestion = createServerFn({ method: "POST" })
         ],
       });
       const answer = await result.text;
-      return { answer: answer.trim(), error: null };
+      return {
+        answer: answer.trim(),
+        error: null,
+        zones_used: zonesUsed,
+        notes_used: notesUsed,
+      };
     } catch (error) {
       console.error("[ask] gateway error", error);
       const message = error instanceof Error ? error.message : String(error);
       if (message.includes("402")) {
-        return { answer: null, error: "AI credits are exhausted. Please top up to keep asking." };
+        return {
+          answer: null,
+          error: "AI credits are exhausted. Please top up to keep asking.",
+          zones_used: zonesUsed,
+          notes_used: notesUsed,
+        };
       }
       if (message.includes("429")) {
-        return { answer: null, error: "Too many questions at once — please try again in a moment." };
+        return {
+          answer: null,
+          error: "Too many questions at once — please try again in a moment.",
+          zones_used: zonesUsed,
+          notes_used: notesUsed,
+        };
       }
-      return { answer: null, error: "The assistant could not answer right now." };
+      return {
+        answer: null,
+        error: "The assistant could not answer right now.",
+        zones_used: zonesUsed,
+        notes_used: notesUsed,
+      };
     }
   });

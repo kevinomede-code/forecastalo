@@ -1,9 +1,9 @@
 import { createFileRoute, ClientOnly } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
-import TopNav from "@/components/TopNav";
+import AppSidebar from "@/components/AppSidebar";
 import {
   colorFor,
   KG_KINDS,
@@ -15,6 +15,8 @@ import {
 const KnowledgeGraph = lazy(() => import("@/components/KnowledgeGraph"));
 
 export const Route = createFileRoute("/graph")({
+  validateSearch: (search: Record<string, unknown>): { node?: string } =>
+    typeof search['node'] === "string" ? { node: search['node'] } : {},
   head: () => ({
     meta: [
       { title: "Knowledge Graph — Forecastalo Data, Methods and Limits" },
@@ -35,10 +37,19 @@ export const Route = createFileRoute("/graph")({
 });
 
 function GraphPage() {
+  const routeSearch = Route.useSearch();
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(routeSearch.node ?? null);
   const [focusNonce, setFocusNonce] = useState(0);
   const [hiddenKinds, setHiddenKinds] = useState<Set<string>>(new Set());
+
+  // Allow linking straight to a note with /graph?node=slug
+  useEffect(() => {
+    if (routeSearch.node) {
+      setSelected(routeSearch.node);
+      setFocusNonce((n) => n + 1);
+    }
+  }, [routeSearch.node]);
 
   const query = useQuery({
     queryKey: ["kg"],
@@ -135,8 +146,8 @@ function GraphPage() {
       : [];
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
-      <TopNav tagline="How the numbers behind the scores fit together" />
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
+      <AppSidebar />
 
       <main className="flex min-h-0 flex-1 gap-5 p-5">
         <section className="flex min-h-0 w-[62%] flex-col gap-4">

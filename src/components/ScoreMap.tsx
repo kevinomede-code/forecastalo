@@ -108,13 +108,15 @@ function popupHtml(props: Record<string, unknown>) {
   const score = Number(props['score'] ?? 0);
   const recommendation = String(props['recommendation'] ?? "");
 
-  return `<div class="min-w-[15rem] max-w-[18rem] p-1">
-    <div class="flex items-center justify-between gap-3">
-      <h3 class="text-sm font-semibold text-foreground">${esc(String(props['name'] ?? ""))}</h3>
-      <span class="rounded-full bg-highlight-soft px-2.5 py-1 text-sm font-semibold text-highlight">${score.toFixed(1)}</span>
+  return `<div class="w-full">
+    <div class="flex items-center justify-between gap-4">
+      <h3 class="text-base font-semibold leading-tight text-foreground">${esc(String(props['name'] ?? ""))}</h3>
+      <span class="rounded-full bg-highlight-soft px-3 py-1 text-base font-semibold text-highlight">${score.toFixed(1)}</span>
     </div>
-    <div class="mt-3">${rowsHtml}${contextHtml}${missingHtml}</div>
-    ${recommendation ? `<p class="mt-3 border-t border-border pt-2 text-xs leading-relaxed text-muted-foreground">${esc(recommendation)}</p>` : ""}
+    <div class="forecastalo-popup-body mt-3">
+      <div>${rowsHtml}${contextHtml}${missingHtml}</div>
+      ${recommendation ? `<p class="mt-3 border-t border-border pt-2.5 text-xs leading-relaxed text-muted-foreground">${esc(recommendation)}</p>` : ""}
+    </div>
   </div>`;
 }
 
@@ -240,7 +242,7 @@ export default function ScoreMap({
     const popup = new mapboxgl.Popup({
       closeButton: true,
       closeOnClick: true,
-      maxWidth: "20rem",
+      maxWidth: "22rem",
       className: "forecastalo-popup",
     });
     popupRef.current = popup;

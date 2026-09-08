@@ -245,7 +245,10 @@ function Index() {
                           key={row.zone_id}
                           className="animate-fade-in-up cursor-pointer rounded-xl border border-border bg-card p-4 shadow-soft transition-colors hover:border-highlight/40"
                           style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}
-                          onClick={() => setFocus({ zoneId: row.zone_id, nonce: Date.now() })}
+                          onClick={() => {
+                            setFocus({ zoneId: row.zone_id, nonce: Date.now() });
+                            setSelected(row);
+                          }}
                         >
                           <div className="flex items-center justify-between gap-3">
                             <span className="truncate text-sm font-medium">
@@ -261,6 +264,7 @@ function Index() {
                               {score.toFixed(1)}
                             </span>
                           </div>
+                          <BreakdownList breakdown={row.breakdown} />
                           <p className="mt-2 text-sm text-muted-foreground">
                             {row.recommendation ?? "No recommendation available."}
                           </p>
@@ -278,12 +282,16 @@ function Index() {
                 <AskPanel
                   play={play}
                   level={
-                    (LEVEL_BY_GEOGRAPHY[geography] ?? "province") as "province" | "municipality"
+                    levelFor(play, geography) as "province" | "municipality" | "market_zone"
                   }
                 />
               </TabsContent>
             </Tabs>
           </div>
+
+          {isMarketZone && selected?.zones ? (
+            <SpreadChart zoneId={selected.zone_id} zoneName={selected.zones.name} />
+          ) : null}
 
         </section>
 
@@ -302,9 +310,17 @@ function Index() {
                 </div>
               }
             >
-              <ScoreMap rows={results} focus={focus} />
+              <ScoreMap
+                rows={results}
+                focus={focus}
+                clustered={!isMarketZone}
+                onSelectZone={(zoneId) =>
+                  setSelected(results.find((r) => r.zone_id === zoneId) ?? null)
+                }
+              />
             </Suspense>
           </ClientOnly>
+
 
         </section>
       </main>

@@ -211,6 +211,9 @@ export default function ScoreMap({
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const popupRef = useRef<mapboxgl.Popup | null>(null);
   const readyRef = useRef(false);
+  const clusteredRef = useRef(clustered);
+  clusteredRef.current = clustered;
+
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
 

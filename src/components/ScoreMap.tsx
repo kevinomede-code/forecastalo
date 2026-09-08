@@ -297,6 +297,23 @@ export default function ScoreMap({
     };
   }, [token]);
 
+  // Rebuild the source when the clustering mode changes (clustering is fixed per source)
+  const firstModeRef = useRef(true);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (firstModeRef.current) {
+      firstModeRef.current = false;
+      return;
+    }
+    const apply = () => {
+      installLayers(map, rowsRef.current, clustered);
+      map.easeTo({ center: [12.5, 42.5], zoom: 5, duration: 600 });
+    };
+    if (readyRef.current) apply();
+    else map.once("load", apply);
+  }, [clustered]);
+
   // Update data in place
   useEffect(() => {
     const map = mapRef.current;
@@ -316,7 +333,9 @@ export default function ScoreMap({
     const row = rows.find((r) => r.zone_id === focus.zoneId);
     if (!row?.zones || row.zones.longitude == null || row.zones.latitude == null) return;
     const coords: [number, number] = [Number(row.zones.longitude), Number(row.zones.latitude)];
-    map.flyTo({ center: coords, zoom: Math.max(map.getZoom(), 10), duration: 1200, essential: true });
+    const targetZoom = clustered ? Math.max(map.getZoom(), 10) : Math.max(map.getZoom(), 5);
+    map.flyTo({ center: coords, zoom: targetZoom, duration: 1200, essential: true });
+
     popupRef.current
       ?.setLngLat(coords)
       .setHTML(

@@ -235,7 +235,7 @@ export default function KnowledgeGraph({
       <svg
         ref={svgRef}
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio="xMidYMid meet"
         className="h-full w-full touch-none"
         onClick={() => onSelect(null)}
       >

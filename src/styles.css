@@ -170,11 +170,20 @@
 /* Mapbox popup, restyled to match the app */
 .forecastalo-popup .mapboxgl-popup-content {
   border-radius: 1rem;
-  padding: 1rem 1.1rem;
+  padding: 1.15rem 1.35rem;
+  width: 22rem;
+  max-width: 22rem;
   background-color: var(--color-card);
   color: var(--color-foreground);
   border: 1px solid var(--color-border);
   box-shadow: 0 12px 32px -12px oklch(0 0 0 / 22%);
+  line-height: 1.6;
+}
+
+.forecastalo-popup .forecastalo-popup-body {
+  max-height: 20rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
 }
 
 .forecastalo-popup .mapboxgl-popup-tip {

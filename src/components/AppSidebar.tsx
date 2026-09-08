@@ -24,7 +24,10 @@ export default function AppSidebar({ activeChatId }: { activeChatId?: string | n
   useEffect(() => {
     setCollapsed(loadSidebarCollapsed());
     setChats(loadChats());
-    return subscribeChats(() => setChats(loadChats()));
+    const unsubscribe = subscribeChats(() => setChats(loadChats()));
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   function toggle() {
@@ -58,7 +61,7 @@ export default function AppSidebar({ activeChatId }: { activeChatId?: string | n
       <div className="px-2">
         <button
           type="button"
-          onClick={() => navigate({ to: "/", search: {} })}
+          onClick={() => navigate({ to: "/", search: {} as { chat?: string } })}
           title="New chat"
           className={`flex w-full items-center gap-2 rounded-xl border border-border bg-background px-2.5 py-2 text-sm text-muted-foreground shadow-soft transition-colors hover:border-highlight/40 hover:text-foreground ${
             collapsed ? "justify-center" : ""
@@ -96,7 +99,7 @@ export default function AppSidebar({ activeChatId }: { activeChatId?: string | n
                     title="Delete chat"
                     onClick={() => {
                       deleteChat(chat.id);
-                      if (active) navigate({ to: "/", search: {} });
+                      if (active) navigate({ to: "/", search: {} as { chat?: string } });
                     }}
                     className="absolute right-1 top-1.5 hidden rounded-md p-1 text-muted-foreground transition-colors hover:text-destructive group-hover:block"
                   >

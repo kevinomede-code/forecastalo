@@ -25,9 +25,8 @@ const ScoreMap = lazy(() => import("@/components/ScoreMap"));
 type NoteUsed = { slug: string; title: string; kind: string; summary: string | null };
 
 export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    chat: typeof search['chat'] === "string" ? (search['chat'] as string) : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { chat?: string } =>
+    typeof search['chat'] === "string" ? { chat: search['chat'] } : {},
   head: () => ({
     meta: [
       { title: "Forecastalo — Ask About Italian Housing & Energy Investment Data" },

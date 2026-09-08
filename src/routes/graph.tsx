@@ -15,9 +15,8 @@ import {
 const KnowledgeGraph = lazy(() => import("@/components/KnowledgeGraph"));
 
 export const Route = createFileRoute("/graph")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    node: typeof search['node'] === "string" ? (search['node'] as string) : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { node?: string } =>
+    typeof search['node'] === "string" ? { node: search['node'] } : {},
   head: () => ({
     meta: [
       { title: "Knowledge Graph — Forecastalo Data, Methods and Limits" },

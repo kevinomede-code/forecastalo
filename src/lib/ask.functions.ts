@@ -117,7 +117,7 @@ export const askQuestion = createServerFn({ method: "POST" })
       zone_id: string;
       score_total: number | null;
       recommendation: string | null;
-      breakdown: unknown;
+      breakdown: Record<string, unknown> | null;
       zones: {
         name: string;
         level: string;
@@ -163,7 +163,7 @@ export const askQuestion = createServerFn({ method: "POST" })
         zone_id: zone.id,
         score_total: scoreRows?.[0]?.score_total ?? null,
         recommendation: scoreRows?.[0]?.recommendation ?? null,
-        breakdown: scoreRows?.[0]?.breakdown ?? null,
+        breakdown: (scoreRows?.[0]?.breakdown ?? null) as Record<string, unknown> | null,
         zones: {
           name: zone.name,
           level: zone.level,

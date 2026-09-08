@@ -201,10 +201,12 @@ export default function ScoreMap({
   rows,
   focus,
   clustered = true,
+  onSelectZone,
 }: {
   rows: ScoreRow[];
   focus: MapFocus;
   clustered?: boolean;
+  onSelectZone?: (zoneId: string) => void;
 }) {
 
   const container = useRef<HTMLDivElement | null>(null);
@@ -213,9 +215,12 @@ export default function ScoreMap({
   const readyRef = useRef(false);
   const clusteredRef = useRef(clustered);
   clusteredRef.current = clustered;
+  const selectRef = useRef(onSelectZone);
+  selectRef.current = onSelectZone;
 
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
+
 
   const token = import.meta.env['VITE_MAPBOX_TOKEN'] as string | undefined;
 

@@ -128,6 +128,8 @@ function Index() {
 
   const results = query.data ?? [];
   const topResults = results.slice(0, 50);
+  const isMarketZone = levelFor(play, geography) === "market_zone";
+
 
   let systemMessage = "Ready.";
   if (query.isFetching) systemMessage = "Calculating…";

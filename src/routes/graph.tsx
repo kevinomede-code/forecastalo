@@ -38,10 +38,19 @@ export const Route = createFileRoute("/graph")({
 });
 
 function GraphPage() {
+  const routeSearch = Route.useSearch();
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(routeSearch.node ?? null);
   const [focusNonce, setFocusNonce] = useState(0);
   const [hiddenKinds, setHiddenKinds] = useState<Set<string>>(new Set());
+
+  // Allow linking straight to a note with /graph?node=slug
+  useEffect(() => {
+    if (routeSearch.node) {
+      setSelected(routeSearch.node);
+      setFocusNonce((n) => n + 1);
+    }
+  }, [routeSearch.node]);
 
   const query = useQuery({
     queryKey: ["kg"],

@@ -148,7 +148,7 @@ function Index() {
           <div className="shrink-0 rounded-2xl border border-border bg-card p-5 shadow-soft">
             <div className="grid gap-4">
               <Field label="Investment play">
-                <Select value={play} onValueChange={setPlay}>
+                <Select value={play} onValueChange={changePlay}>
                   <SelectTrigger className="rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
@@ -169,13 +169,15 @@ function Index() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="provinces_italy">Provinces — Italy</SelectItem>
-                      <SelectItem value="municipalities_piemonte">
-                        Municipalities — Piemonte
-                      </SelectItem>
+                      {geographyOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </Field>
+
 
                 <Field label="Horizon">
                   <Select value={horizon} onValueChange={setHorizon}>

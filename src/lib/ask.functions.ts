@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { Json } from "@/integrations/supabase/types";
 
 const AskInput = z.object({
   question: z.string().min(1).max(2000),
@@ -117,7 +118,7 @@ export const askQuestion = createServerFn({ method: "POST" })
       zone_id: string;
       score_total: number | null;
       recommendation: string | null;
-      breakdown: Record<string, unknown> | null;
+      breakdown: Json;
       zones: {
         name: string;
         level: string;
@@ -163,7 +164,7 @@ export const askQuestion = createServerFn({ method: "POST" })
         zone_id: zone.id,
         score_total: scoreRows?.[0]?.score_total ?? null,
         recommendation: scoreRows?.[0]?.recommendation ?? null,
-        breakdown: (scoreRows?.[0]?.breakdown ?? null) as Record<string, unknown> | null,
+        breakdown: (scoreRows?.[0]?.breakdown ?? null) as Json,
         zones: {
           name: zone.name,
           level: zone.level,

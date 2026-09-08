@@ -154,6 +154,78 @@ export type Database = {
           },
         ]
       }
+      kg_edges: {
+        Row: {
+          id: string
+          note: string | null
+          relation: string
+          source_slug: string
+          target_slug: string
+        }
+        Insert: {
+          id?: string
+          note?: string | null
+          relation: string
+          source_slug: string
+          target_slug: string
+        }
+        Update: {
+          id?: string
+          note?: string | null
+          relation?: string
+          source_slug?: string
+          target_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kg_edges_source_slug_fkey"
+            columns: ["source_slug"]
+            isOneToOne: false
+            referencedRelation: "kg_nodes"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "kg_edges_target_slug_fkey"
+            columns: ["target_slug"]
+            isOneToOne: false
+            referencedRelation: "kg_nodes"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      kg_nodes: {
+        Row: {
+          created_at: string | null
+          detail: string | null
+          id: string
+          kind: string
+          refs: Json | null
+          slug: string
+          summary: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          detail?: string | null
+          id?: string
+          kind: string
+          refs?: Json | null
+          slug: string
+          summary: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          detail?: string | null
+          id?: string
+          kind?: string
+          refs?: Json | null
+          slug?: string
+          summary?: string
+          title?: string
+        }
+        Relationships: []
+      }
       scores: {
         Row: {
           breakdown: Json | null
@@ -248,6 +320,7 @@ export type Database = {
         Args: { p_level: string; p_play: string }
         Returns: Json
       }
+      kg_search: { Args: { max_nodes?: number; q: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never

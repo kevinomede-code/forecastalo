@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
-import TopNav from "@/components/TopNav";
+import AppSidebar from "@/components/AppSidebar";
 import {
   colorFor,
   KG_KINDS,
@@ -15,6 +15,9 @@ import {
 const KnowledgeGraph = lazy(() => import("@/components/KnowledgeGraph"));
 
 export const Route = createFileRoute("/graph")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    node: typeof search['node'] === "string" ? (search['node'] as string) : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Knowledge Graph — Forecastalo Data, Methods and Limits" },

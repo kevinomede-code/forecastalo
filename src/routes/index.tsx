@@ -27,7 +27,6 @@ type NoteUsed = { slug: string; title: string; kind: string; summary: string | n
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>) => ({
     chat: typeof search['chat'] === "string" ? (search['chat'] as string) : undefined,
-    node: undefined as undefined,
   }),
   head: () => ({
     meta: [

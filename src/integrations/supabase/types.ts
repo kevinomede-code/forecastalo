@@ -56,36 +56,42 @@ export type Database = {
       forecasts: {
         Row: {
           created_at: string
-          horizon_months: number
+          horizon_days: number | null
+          horizon_months: number | null
           id: string
           indicator_code: string
           lower_bound: number | null
           model_version: string | null
           period: string
+          run_at: string | null
           upper_bound: number | null
           value_forecast: number | null
           zone_id: string
         }
         Insert: {
           created_at?: string
-          horizon_months: number
+          horizon_days?: number | null
+          horizon_months?: number | null
           id?: string
           indicator_code: string
           lower_bound?: number | null
           model_version?: string | null
           period: string
+          run_at?: string | null
           upper_bound?: number | null
           value_forecast?: number | null
           zone_id: string
         }
         Update: {
           created_at?: string
-          horizon_months?: number
+          horizon_days?: number | null
+          horizon_months?: number | null
           id?: string
           indicator_code?: string
           lower_bound?: number | null
           model_version?: string | null
           period?: string
+          run_at?: string | null
           upper_bound?: number | null
           value_forecast?: number | null
           zone_id?: string
@@ -189,10 +195,12 @@ export type Database = {
       zones: {
         Row: {
           created_at: string
+          eic_code: string | null
           id: string
           latitude: number | null
           level: string
           longitude: number | null
+          market_zone: string | null
           name: string
           parent_zone_code: string | null
           population: number | null
@@ -201,10 +209,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          eic_code?: string | null
           id?: string
           latitude?: number | null
           level: string
           longitude?: number | null
+          market_zone?: string | null
           name: string
           parent_zone_code?: string | null
           population?: number | null
@@ -213,10 +223,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          eic_code?: string | null
           id?: string
           latitude?: number | null
           level?: string
           longitude?: number | null
+          market_zone?: string | null
           name?: string
           parent_zone_code?: string | null
           population?: number | null
@@ -230,6 +242,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      compute_battery_scores: { Args: { p_play?: string }; Returns: number }
+      compute_scores: { Args: { p_play?: string }; Returns: number }
       context_stats: {
         Args: { p_level: string; p_play: string }
         Returns: Json

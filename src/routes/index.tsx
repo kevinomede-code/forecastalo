@@ -45,14 +45,32 @@ export const Route = createFileRoute("/")({
 
 const PLAYS = [
   { value: "housing_energy", label: "Housing + Energy (PV + heat pump)", disabled: false },
+  { value: "battery_storage", label: "Battery storage (arbitrage)", disabled: false },
   { value: "ev_charging", label: "EV Charging & Mobility", disabled: true },
   { value: "energy_community", label: "Energy Community", disabled: true },
 ];
 
-const LEVEL_BY_GEOGRAPHY: Record<string, string> = {
-  provinces_italy: "province",
-  municipalities_piemonte: "municipality",
+const GEOGRAPHIES: Record<
+  string,
+  Array<{ value: string; label: string; level: string }>
+> = {
+  housing_energy: [
+    { value: "provinces_italy", label: "Provinces — Italy", level: "province" },
+    {
+      value: "municipalities_piemonte",
+      label: "Municipalities — Piemonte",
+      level: "municipality",
+    },
+  ],
+  battery_storage: [
+    { value: "market_zones_italy", label: "Market zones — Italy", level: "market_zone" },
+  ],
 };
+
+function levelFor(play: string, geography: string) {
+  const options = GEOGRAPHIES[play] ?? GEOGRAPHIES['housing_energy']!;
+  return (options.find((o) => o.value === geography) ?? options[0]!).level;
+}
 
 const PAGE_SIZE = 1000;
 
@@ -66,6 +84,18 @@ function Index() {
     nonce: number;
   } | null>(null);
   const [focus, setFocus] = useState<MapFocus>(null);
+  const [selected, setSelected] = useState<ScoreRow | null>(null);
+
+  const geographyOptions = GEOGRAPHIES[play] ?? GEOGRAPHIES['housing_energy']!;
+
+  function changePlay(next: string) {
+    setPlay(next);
+    setGeography((GEOGRAPHIES[next] ?? GEOGRAPHIES['housing_energy']!)[0]!.value);
+    setRequest(null);
+    setFocus(null);
+    setSelected(null);
+  }
+
 
   const query = useQuery({
     queryKey: ["scores", request?.play, request?.geography, request?.nonce],

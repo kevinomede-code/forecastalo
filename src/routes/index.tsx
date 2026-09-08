@@ -319,9 +319,10 @@ function Index() {
                 rows={results}
                 focus={focus}
                 clustered={!isMarketZone}
-                onSelectZone={(zoneId) =>
+                onSelectZone={(zoneId: string) =>
                   setSelected(results.find((r) => r.zone_id === zoneId) ?? null)
                 }
+
               />
             </Suspense>
           </ClientOnly>

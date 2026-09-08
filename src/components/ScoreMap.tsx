@@ -271,11 +271,14 @@ export default function ScoreMap({
     map.on("click", "points", (e) => {
       const feature = e.features?.[0] as unknown as Feature<Point> | undefined;
       if (!feature) return;
+      const zoneId = feature.properties?.['zone_id'];
+      if (typeof zoneId === "string") selectRef.current?.(zoneId);
       popup
         .setLngLat((feature.geometry as Point).coordinates as [number, number])
         .setHTML(popupHtml(feature.properties ?? {}))
         .addTo(map);
     });
+
 
     map.on("mouseenter", "points", () => {
       map.getCanvas().style.cursor = "pointer";

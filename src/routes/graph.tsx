@@ -1,6 +1,6 @@
 import { createFileRoute, ClientOnly } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import AppSidebar from "@/components/AppSidebar";
@@ -147,8 +147,8 @@ function GraphPage() {
       : [];
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
-      <TopNav tagline="How the numbers behind the scores fit together" />
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
+      <AppSidebar />
 
       <main className="flex min-h-0 flex-1 gap-5 p-5">
         <section className="flex min-h-0 w-[62%] flex-col gap-4">

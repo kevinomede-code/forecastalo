@@ -15,6 +15,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AskPanel from "@/components/AskPanel";
+import BreakdownList from "@/components/BreakdownList";
+import SpreadChart from "@/components/SpreadChart";
+
 
 const ScoreMap = lazy(() => import("@/components/ScoreMap"));
 

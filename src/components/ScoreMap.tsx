@@ -118,8 +118,95 @@ function popupHtml(props: Record<string, unknown>) {
   </div>`;
 }
 
+const LAYER_IDS = ["cluster-count", "clusters", "points"];
 
-export default function ScoreMap({ rows, focus }: { rows: ScoreRow[]; focus: MapFocus }) {
+function removeLayers(map: mapboxgl.Map) {
+  for (const id of LAYER_IDS) if (map.getLayer(id)) map.removeLayer(id);
+  if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+}
+
+function installLayers(map: mapboxgl.Map, rows: ScoreRow[], clustered: boolean) {
+  removeLayers(map);
+
+  map.addSource(SOURCE_ID, {
+    type: "geojson",
+    data: toGeoJSON(rows),
+    ...(clustered
+      ? {
+          cluster: true,
+          clusterRadius: 50,
+          clusterMaxZoom: 9,
+          clusterProperties: { score_sum: ["+", ["get", "score"]] },
+        }
+      : {}),
+  });
+
+  if (clustered) {
+    map.addLayer({
+      id: "clusters",
+      type: "circle",
+      source: SOURCE_ID,
+      filter: ["has", "point_count"],
+      paint: {
+        "circle-color": CLUSTER_RAMP,
+        "circle-radius": [
+          "interpolate",
+          ["linear"],
+          ["get", "point_count"],
+          2,
+          14,
+          25,
+          20,
+          100,
+          28,
+          500,
+          36,
+        ],
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#ffffff",
+        "circle-opacity": 0.9,
+      },
+    });
+
+    map.addLayer({
+      id: "cluster-count",
+      type: "symbol",
+      source: SOURCE_ID,
+      filter: ["has", "point_count"],
+      layout: {
+        "text-field": ["get", "point_count_abbreviated"],
+        "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
+        "text-size": 12,
+      },
+      paint: { "text-color": "#ffffff" },
+    });
+  }
+
+  map.addLayer({
+    id: "points",
+    type: "circle",
+    source: SOURCE_ID,
+    ...(clustered ? { filter: ["!", ["has", "point_count"]] as never } : {}),
+    paint: {
+      "circle-color": SCORE_RAMP,
+      "circle-radius": clustered ? 7 : 22,
+      "circle-stroke-width": clustered ? 1.5 : 2,
+      "circle-stroke-color": "#ffffff",
+      "circle-opacity": clustered ? 1 : 0.85,
+    },
+  });
+}
+
+export default function ScoreMap({
+  rows,
+  focus,
+  clustered = true,
+}: {
+  rows: ScoreRow[];
+  focus: MapFocus;
+  clustered?: boolean;
+}) {
+
   const container = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const popupRef = useRef<mapboxgl.Popup | null>(null);

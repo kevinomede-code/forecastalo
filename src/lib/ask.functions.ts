@@ -160,10 +160,10 @@ export const askQuestion = createServerFn({ method: "POST" })
       .order("score_total", { ascending: false })
       .limit(15);
 
-    const { data: statsData } = await supabaseAdmin.rpc("context_stats", {
-      p_play: play,
-      p_level: level,
-    });
+    const [{ data: statsData }, { data: kgData }] = await Promise.all([
+      supabaseAdmin.rpc("context_stats", { p_play: play, p_level: level }),
+      supabaseAdmin.rpc("kg_search", { q: question, max_nodes: 6 }),
+    ]);
 
     const context = {
       play,
@@ -175,6 +175,7 @@ export const askQuestion = createServerFn({ method: "POST" })
         breakdown: row.breakdown,
         recommendation: row.recommendation,
       })),
+      knowledge_graph: kgData ?? { matched: [], related: [] },
       summary: statsData ?? {
         zones_scored: 0,
         score: {},

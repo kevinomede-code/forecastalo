@@ -241,66 +241,8 @@ export default function ScoreMap({
     popupRef.current = popup;
 
     map.on("load", () => {
-      map.addSource(SOURCE_ID, {
-        type: "geojson",
-        data: toGeoJSON(rowsRef.current),
-        cluster: true,
-        clusterRadius: 50,
-        clusterMaxZoom: 9,
-        clusterProperties: { score_sum: ["+", ["get", "score"]] },
-      });
+      installLayers(map, rowsRef.current, clusteredRef.current);
 
-      map.addLayer({
-        id: "clusters",
-        type: "circle",
-        source: SOURCE_ID,
-        filter: ["has", "point_count"],
-        paint: {
-          "circle-color": CLUSTER_RAMP,
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["get", "point_count"],
-            2,
-            14,
-            25,
-            20,
-            100,
-            28,
-            500,
-            36,
-          ],
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#ffffff",
-          "circle-opacity": 0.9,
-        },
-      });
-
-      map.addLayer({
-        id: "cluster-count",
-        type: "symbol",
-        source: SOURCE_ID,
-        filter: ["has", "point_count"],
-        layout: {
-          "text-field": ["get", "point_count_abbreviated"],
-          "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
-          "text-size": 12,
-        },
-        paint: { "text-color": "#ffffff" },
-      });
-
-      map.addLayer({
-        id: "points",
-        type: "circle",
-        source: SOURCE_ID,
-        filter: ["!", ["has", "point_count"]],
-        paint: {
-          "circle-color": SCORE_RAMP,
-          "circle-radius": 7,
-          "circle-stroke-width": 1.5,
-          "circle-stroke-color": "#ffffff",
-        },
-      });
 
       readyRef.current = true;
       map.resize();

@@ -78,7 +78,10 @@ export function parseBreakdown(breakdown: Breakdown): ParsedBreakdown {
     if (isPart(value)) factors.push([labelFor(key), value]);
   }
 
+  factors.sort((a, b) => (b[1].weight ?? 0) - (a[1].weight ?? 0));
+
   return { factors, context, missing };
+
 }
 
 export function formatPart(part: BreakdownPart) {

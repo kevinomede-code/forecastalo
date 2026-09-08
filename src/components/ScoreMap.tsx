@@ -329,10 +329,23 @@ export default function ScoreMap({
     const apply = () => {
       const source = map.getSource(SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
       if (source) source.setData(toGeoJSON(rows));
+      // Few, large zone circles: frame them all instead of keeping a fixed zoom.
+      if (!clustered && rows.length > 0) {
+        const bounds = new mapboxgl.LngLatBounds();
+        let any = false;
+        for (const row of rows) {
+          if (row.zones?.longitude == null || row.zones?.latitude == null) continue;
+          bounds.extend([Number(row.zones.longitude), Number(row.zones.latitude)]);
+          any = true;
+        }
+        if (any) map.fitBounds(bounds, { padding: 90, duration: 800, maxZoom: 6 });
+      }
     };
     if (readyRef.current) apply();
     else map.once("load", apply);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows]);
+
 
   // Fly to a zone selected in the list
   useEffect(() => {

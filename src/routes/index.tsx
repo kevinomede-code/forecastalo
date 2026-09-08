@@ -15,6 +15,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AskPanel from "@/components/AskPanel";
+import BreakdownList from "@/components/BreakdownList";
+import SpreadChart from "@/components/SpreadChart";
+
 
 const ScoreMap = lazy(() => import("@/components/ScoreMap"));
 
@@ -45,14 +48,32 @@ export const Route = createFileRoute("/")({
 
 const PLAYS = [
   { value: "housing_energy", label: "Housing + Energy (PV + heat pump)", disabled: false },
+  { value: "battery_storage", label: "Battery storage (arbitrage)", disabled: false },
   { value: "ev_charging", label: "EV Charging & Mobility", disabled: true },
   { value: "energy_community", label: "Energy Community", disabled: true },
 ];
 
-const LEVEL_BY_GEOGRAPHY: Record<string, string> = {
-  provinces_italy: "province",
-  municipalities_piemonte: "municipality",
+const GEOGRAPHIES: Record<
+  string,
+  Array<{ value: string; label: string; level: string }>
+> = {
+  housing_energy: [
+    { value: "provinces_italy", label: "Provinces — Italy", level: "province" },
+    {
+      value: "municipalities_piemonte",
+      label: "Municipalities — Piemonte",
+      level: "municipality",
+    },
+  ],
+  battery_storage: [
+    { value: "market_zones_italy", label: "Market zones — Italy", level: "market_zone" },
+  ],
 };
+
+function levelFor(play: string, geography: string) {
+  const options = GEOGRAPHIES[play] ?? GEOGRAPHIES['housing_energy']!;
+  return (options.find((o) => o.value === geography) ?? options[0]!).level;
+}
 
 const PAGE_SIZE = 1000;
 
@@ -66,12 +87,24 @@ function Index() {
     nonce: number;
   } | null>(null);
   const [focus, setFocus] = useState<MapFocus>(null);
+  const [selected, setSelected] = useState<ScoreRow | null>(null);
+
+  const geographyOptions = GEOGRAPHIES[play] ?? GEOGRAPHIES['housing_energy']!;
+
+  function changePlay(next: string) {
+    setPlay(next);
+    setGeography((GEOGRAPHIES[next] ?? GEOGRAPHIES['housing_energy']!)[0]!.value);
+    setRequest(null);
+    setFocus(null);
+    setSelected(null);
+  }
+
 
   const query = useQuery({
     queryKey: ["scores", request?.play, request?.geography, request?.nonce],
     enabled: request !== null,
     queryFn: async () => {
-      const level = LEVEL_BY_GEOGRAPHY[request!.geography] ?? "province";
+      const level = levelFor(request!.play, request!.geography);
       const all: ScoreRow[] = [];
       // Supabase caps responses at 1000 rows, so page through the results.
       for (let from = 0; ; from += PAGE_SIZE) {
@@ -95,6 +128,8 @@ function Index() {
 
   const results = query.data ?? [];
   const topResults = results.slice(0, 50);
+  const isMarketZone = levelFor(play, geography) === "market_zone";
+
 
   let systemMessage = "Ready.";
   if (query.isFetching) systemMessage = "Calculating…";
@@ -118,7 +153,7 @@ function Index() {
           <div className="shrink-0 rounded-2xl border border-border bg-card p-5 shadow-soft">
             <div className="grid gap-4">
               <Field label="Investment play">
-                <Select value={play} onValueChange={setPlay}>
+                <Select value={play} onValueChange={changePlay}>
                   <SelectTrigger className="rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
@@ -139,13 +174,15 @@ function Index() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="provinces_italy">Provinces — Italy</SelectItem>
-                      <SelectItem value="municipalities_piemonte">
-                        Municipalities — Piemonte
-                      </SelectItem>
+                      {geographyOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </Field>
+
 
                 <Field label="Horizon">
                   <Select value={horizon} onValueChange={setHorizon}>
@@ -213,7 +250,10 @@ function Index() {
                           key={row.zone_id}
                           className="animate-fade-in-up cursor-pointer rounded-xl border border-border bg-card p-4 shadow-soft transition-colors hover:border-highlight/40"
                           style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}
-                          onClick={() => setFocus({ zoneId: row.zone_id, nonce: Date.now() })}
+                          onClick={() => {
+                            setFocus({ zoneId: row.zone_id, nonce: Date.now() });
+                            setSelected(row);
+                          }}
                         >
                           <div className="flex items-center justify-between gap-3">
                             <span className="truncate text-sm font-medium">
@@ -229,6 +269,7 @@ function Index() {
                               {score.toFixed(1)}
                             </span>
                           </div>
+                          <BreakdownList breakdown={row.breakdown} />
                           <p className="mt-2 text-sm text-muted-foreground">
                             {row.recommendation ?? "No recommendation available."}
                           </p>
@@ -246,12 +287,16 @@ function Index() {
                 <AskPanel
                   play={play}
                   level={
-                    (LEVEL_BY_GEOGRAPHY[geography] ?? "province") as "province" | "municipality"
+                    levelFor(play, geography) as "province" | "municipality" | "market_zone"
                   }
                 />
               </TabsContent>
             </Tabs>
           </div>
+
+          {isMarketZone && selected?.zones ? (
+            <SpreadChart zoneId={selected.zone_id} zoneName={selected.zones.name} />
+          ) : null}
 
         </section>
 
@@ -270,9 +315,18 @@ function Index() {
                 </div>
               }
             >
-              <ScoreMap rows={results} focus={focus} />
+              <ScoreMap
+                rows={results}
+                focus={focus}
+                clustered={!isMarketZone}
+                onSelectZone={(zoneId: string) =>
+                  setSelected(results.find((r) => r.zone_id === zoneId) ?? null)
+                }
+
+              />
             </Suspense>
           </ClientOnly>
+
 
         </section>
       </main>

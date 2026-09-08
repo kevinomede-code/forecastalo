@@ -2,7 +2,9 @@ import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { Feature, FeatureCollection, Point } from "geojson";
-import type { Breakdown, MapFocus, ScoreRow } from "@/lib/score-types";
+import type { MapFocus, ScoreRow } from "@/lib/score-types";
+import { formatPart, formatWeight, parseBreakdown } from "@/lib/score-types";
+
 
 const SCORE_RAMP = [
   "interpolate",
@@ -68,32 +70,40 @@ function esc(value: string) {
 }
 
 function popupHtml(props: Record<string, unknown>) {
-  let breakdown: Breakdown = null;
+  let breakdown: Record<string, unknown> | null = null;
   try {
-    breakdown = JSON.parse(String(props['breakdown'] ?? "{}")) as Breakdown;
+    breakdown = JSON.parse(String(props['breakdown'] ?? "{}")) as Record<string, unknown>;
   } catch {
     breakdown = null;
   }
 
-  const rows: Array<[string, keyof NonNullable<Breakdown>]> = [
-    ["Solar", "solar"],
-    ["Market size", "market_size"],
-    ["Demographics", "demographics"],
-  ];
+  const { factors, context, missing } = parseBreakdown(breakdown);
 
-  const rowsHtml = rows
-    .map(([label, key]) => {
-      const part = breakdown?.[key];
-      if (!part) return "";
-      const value = part.value == null ? "—" : `${part.value}${part.unit ? ` ${esc(part.unit)}` : ""}`;
-      const weight = part.weight == null ? "" : `weight ${Math.round(part.weight * 100)}%`;
-      return `<div class="flex items-baseline justify-between gap-4 border-t border-border py-1.5">
-        <span class="text-xs font-medium text-muted-foreground">${label}</span>
-        <span class="text-right text-xs"><span class="font-medium text-foreground">${value}</span>
-        <span class="ml-2 text-muted-foreground">${weight}</span></span>
-      </div>`;
-    })
+  const rowsHtml = factors
+    .map(
+      ([label, part]) => `<div class="flex items-baseline justify-between gap-4 border-t border-border py-1.5">
+        <span class="text-xs font-medium text-muted-foreground">${esc(label)}</span>
+        <span class="text-right text-xs"><span class="font-medium text-foreground">${esc(formatPart(part))}</span>
+        <span class="ml-2 text-muted-foreground">${esc(formatWeight(part))}</span></span>
+      </div>`,
+    )
     .join("");
+
+  const contextHtml = context.length
+    ? `<div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-border pt-2">${context
+        .map(
+          ([label, value]) =>
+            `<span class="text-[11px] text-muted-foreground">${esc(label)}: <span class="text-foreground">${esc(value)}</span></span>`,
+        )
+        .join("")}</div>`
+    : "";
+
+  const missingHtml = missing.length
+    ? `<div class="mt-2 rounded-lg bg-muted px-3 py-2">
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Not included in this score</p>
+        <ul class="mt-1">${missing.map((item) => `<li class="text-xs text-muted-foreground">• ${esc(item)}</li>`).join("")}</ul>
+      </div>`
+    : "";
 
   const score = Number(props['score'] ?? 0);
   const recommendation = String(props['recommendation'] ?? "");
@@ -103,18 +113,114 @@ function popupHtml(props: Record<string, unknown>) {
       <h3 class="text-sm font-semibold text-foreground">${esc(String(props['name'] ?? ""))}</h3>
       <span class="rounded-full bg-highlight-soft px-2.5 py-1 text-sm font-semibold text-highlight">${score.toFixed(1)}</span>
     </div>
-    <div class="mt-3">${rowsHtml}</div>
+    <div class="mt-3">${rowsHtml}${contextHtml}${missingHtml}</div>
     ${recommendation ? `<p class="mt-3 border-t border-border pt-2 text-xs leading-relaxed text-muted-foreground">${esc(recommendation)}</p>` : ""}
   </div>`;
 }
 
-export default function ScoreMap({ rows, focus }: { rows: ScoreRow[]; focus: MapFocus }) {
+const LAYER_IDS = ["cluster-count", "clusters", "points"];
+
+function removeLayers(map: mapboxgl.Map) {
+  for (const id of LAYER_IDS) if (map.getLayer(id)) map.removeLayer(id);
+  if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+}
+
+function installLayers(map: mapboxgl.Map, rows: ScoreRow[], clustered: boolean) {
+  removeLayers(map);
+
+  map.addSource(SOURCE_ID, {
+    type: "geojson",
+    data: toGeoJSON(rows),
+    ...(clustered
+      ? {
+          cluster: true,
+          clusterRadius: 50,
+          clusterMaxZoom: 9,
+          clusterProperties: { score_sum: ["+", ["get", "score"]] },
+        }
+      : {}),
+  });
+
+  if (clustered) {
+    map.addLayer({
+      id: "clusters",
+      type: "circle",
+      source: SOURCE_ID,
+      filter: ["has", "point_count"],
+      paint: {
+        "circle-color": CLUSTER_RAMP,
+        "circle-radius": [
+          "interpolate",
+          ["linear"],
+          ["get", "point_count"],
+          2,
+          14,
+          25,
+          20,
+          100,
+          28,
+          500,
+          36,
+        ],
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#ffffff",
+        "circle-opacity": 0.9,
+      },
+    });
+
+    map.addLayer({
+      id: "cluster-count",
+      type: "symbol",
+      source: SOURCE_ID,
+      filter: ["has", "point_count"],
+      layout: {
+        "text-field": ["get", "point_count_abbreviated"],
+        "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
+        "text-size": 12,
+      },
+      paint: { "text-color": "#ffffff" },
+    });
+  }
+
+  map.addLayer({
+    id: "points",
+    type: "circle",
+    source: SOURCE_ID,
+    ...(clustered ? { filter: ["!", ["has", "point_count"]] as never } : {}),
+    paint: {
+      "circle-color": SCORE_RAMP,
+      "circle-radius": clustered ? 7 : 22,
+      "circle-stroke-width": clustered ? 1.5 : 2,
+      "circle-stroke-color": "#ffffff",
+      "circle-opacity": clustered ? 1 : 0.85,
+    },
+  });
+}
+
+export default function ScoreMap({
+  rows,
+  focus,
+  clustered = true,
+  onSelectZone,
+}: {
+  rows: ScoreRow[];
+  focus: MapFocus;
+  clustered?: boolean;
+  onSelectZone?: (zoneId: string) => void;
+}) {
+
   const container = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const popupRef = useRef<mapboxgl.Popup | null>(null);
   const readyRef = useRef(false);
+  const clusteredRef = useRef(clustered);
+  clusteredRef.current = clustered;
+  const selectRef = useRef(onSelectZone);
+  selectRef.current = onSelectZone;
+
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
+
 
   const token = import.meta.env['VITE_MAPBOX_TOKEN'] as string | undefined;
 
@@ -140,66 +246,8 @@ export default function ScoreMap({ rows, focus }: { rows: ScoreRow[]; focus: Map
     popupRef.current = popup;
 
     map.on("load", () => {
-      map.addSource(SOURCE_ID, {
-        type: "geojson",
-        data: toGeoJSON(rowsRef.current),
-        cluster: true,
-        clusterRadius: 50,
-        clusterMaxZoom: 9,
-        clusterProperties: { score_sum: ["+", ["get", "score"]] },
-      });
+      installLayers(map, rowsRef.current, clusteredRef.current);
 
-      map.addLayer({
-        id: "clusters",
-        type: "circle",
-        source: SOURCE_ID,
-        filter: ["has", "point_count"],
-        paint: {
-          "circle-color": CLUSTER_RAMP,
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["get", "point_count"],
-            2,
-            14,
-            25,
-            20,
-            100,
-            28,
-            500,
-            36,
-          ],
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#ffffff",
-          "circle-opacity": 0.9,
-        },
-      });
-
-      map.addLayer({
-        id: "cluster-count",
-        type: "symbol",
-        source: SOURCE_ID,
-        filter: ["has", "point_count"],
-        layout: {
-          "text-field": ["get", "point_count_abbreviated"],
-          "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
-          "text-size": 12,
-        },
-        paint: { "text-color": "#ffffff" },
-      });
-
-      map.addLayer({
-        id: "points",
-        type: "circle",
-        source: SOURCE_ID,
-        filter: ["!", ["has", "point_count"]],
-        paint: {
-          "circle-color": SCORE_RAMP,
-          "circle-radius": 7,
-          "circle-stroke-width": 1.5,
-          "circle-stroke-color": "#ffffff",
-        },
-      });
 
       readyRef.current = true;
       map.resize();
@@ -223,11 +271,14 @@ export default function ScoreMap({ rows, focus }: { rows: ScoreRow[]; focus: Map
     map.on("click", "points", (e) => {
       const feature = e.features?.[0] as unknown as Feature<Point> | undefined;
       if (!feature) return;
+      const zoneId = feature.properties?.['zone_id'];
+      if (typeof zoneId === "string") selectRef.current?.(zoneId);
       popup
         .setLngLat((feature.geometry as Point).coordinates as [number, number])
         .setHTML(popupHtml(feature.properties ?? {}))
         .addTo(map);
     });
+
 
     map.on("mouseenter", "points", () => {
       map.getCanvas().style.cursor = "pointer";
@@ -254,6 +305,23 @@ export default function ScoreMap({ rows, focus }: { rows: ScoreRow[]; focus: Map
     };
   }, [token]);
 
+  // Rebuild the source when the clustering mode changes (clustering is fixed per source)
+  const firstModeRef = useRef(true);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (firstModeRef.current) {
+      firstModeRef.current = false;
+      return;
+    }
+    const apply = () => {
+      installLayers(map, rowsRef.current, clustered);
+      map.easeTo({ center: [12.5, 42.5], zoom: 5, duration: 600 });
+    };
+    if (readyRef.current) apply();
+    else map.once("load", apply);
+  }, [clustered]);
+
   // Update data in place
   useEffect(() => {
     const map = mapRef.current;
@@ -261,10 +329,23 @@ export default function ScoreMap({ rows, focus }: { rows: ScoreRow[]; focus: Map
     const apply = () => {
       const source = map.getSource(SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
       if (source) source.setData(toGeoJSON(rows));
+      // Few, large zone circles: frame them all instead of keeping a fixed zoom.
+      if (!clustered && rows.length > 0) {
+        const bounds = new mapboxgl.LngLatBounds();
+        let any = false;
+        for (const row of rows) {
+          if (row.zones?.longitude == null || row.zones?.latitude == null) continue;
+          bounds.extend([Number(row.zones.longitude), Number(row.zones.latitude)]);
+          any = true;
+        }
+        if (any) map.fitBounds(bounds, { padding: 90, duration: 800, maxZoom: 6 });
+      }
     };
     if (readyRef.current) apply();
     else map.once("load", apply);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows]);
+
 
   // Fly to a zone selected in the list
   useEffect(() => {
@@ -273,7 +354,9 @@ export default function ScoreMap({ rows, focus }: { rows: ScoreRow[]; focus: Map
     const row = rows.find((r) => r.zone_id === focus.zoneId);
     if (!row?.zones || row.zones.longitude == null || row.zones.latitude == null) return;
     const coords: [number, number] = [Number(row.zones.longitude), Number(row.zones.latitude)];
-    map.flyTo({ center: coords, zoom: Math.max(map.getZoom(), 10), duration: 1200, essential: true });
+    const targetZoom = clustered ? Math.max(map.getZoom(), 10) : Math.max(map.getZoom(), 5);
+    map.flyTo({ center: coords, zoom: targetZoom, duration: 1200, essential: true });
+
     popupRef.current
       ?.setLngLat(coords)
       .setHTML(

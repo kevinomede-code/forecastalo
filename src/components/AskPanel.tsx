@@ -19,8 +19,9 @@ export default function AskPanel({
   level,
 }: {
   play: string;
-  level: "province" | "municipality";
+  level: "province" | "municipality" | "market_zone";
 }) {
+
   const ask = useServerFn(askQuestion);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");

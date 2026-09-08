@@ -101,7 +101,7 @@ function Index() {
     queryKey: ["scores", request?.play, request?.geography, request?.nonce],
     enabled: request !== null,
     queryFn: async () => {
-      const level = LEVEL_BY_GEOGRAPHY[request!.geography] ?? "province";
+      const level = levelFor(request!.play, request!.geography);
       const all: ScoreRow[] = [];
       // Supabase caps responses at 1000 rows, so page through the results.
       for (let from = 0; ; from += PAGE_SIZE) {

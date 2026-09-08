@@ -4,7 +4,7 @@ import { z } from "zod";
 const AskInput = z.object({
   question: z.string().min(1).max(2000),
   play: z.string().min(1).max(64),
-  level: z.enum(["province", "municipality"]),
+  level: z.enum(["province", "municipality", "market_zone"]),
   history: z
     .array(
       z.object({

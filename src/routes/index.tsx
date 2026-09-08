@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AskPanel from "@/components/AskPanel";
 import BreakdownList from "@/components/BreakdownList";
 import SpreadChart from "@/components/SpreadChart";
+import TopNav from "@/components/TopNav";
 
 
 const ScoreMap = lazy(() => import("@/components/ScoreMap"));
@@ -141,12 +142,7 @@ function Index() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
-      <header className="flex shrink-0 items-baseline gap-4 border-b border-border bg-card px-6 py-3">
-        <span className="text-base font-semibold tracking-tight">Forecastalo</span>
-        <span className="truncate text-sm text-muted-foreground">
-          Where to invest in housing and energy across Italy
-        </span>
-      </header>
+      <TopNav tagline="Where to invest in housing and energy across Italy" />
 
       <main className="flex min-h-0 flex-1 gap-5 p-5">
         <section className="flex min-h-0 w-[40%] flex-col gap-5">

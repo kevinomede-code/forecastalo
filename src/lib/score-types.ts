@@ -53,7 +53,7 @@ function isPart(value: unknown): value is BreakdownPart {
 }
 
 export type ParsedBreakdown = {
-  factors: Array<[string, BreakdownPart]>;
+  factors: Array<[string, BreakdownPart, string]>;
   context: Array<[string, string]>;
   missing: string[];
 };

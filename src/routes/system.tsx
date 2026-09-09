@@ -66,6 +66,21 @@ const LIMITS = [
   "Nothing here is investment advice.",
 ];
 
+const KEY_TERMS: Array<[string, string]> = [
+  ["Bidding zone", "One of the 7 areas where Italy forms its electricity price. Current layout since 1 January 2021, when Calabria was split off from South."],
+  ["Day-ahead market (MGP)", "The auction where energy for the following day is traded hour by hour. Every price in this project comes from it."],
+  ["Spread", "Daily maximum minus daily minimum price. The gross revenue of one battery charge-discharge cycle."],
+  ["Zero-shot forecasting", "The model predicts a series it was never trained on. There is no training step in this codebase."],
+  ["Context and horizon", "How many past points the model is given (1,024 days) and how many future ones it is asked for (90 days)."],
+  ["Quantiles", "Not a single predicted number but a distribution: the median plus percentiles, which become the confidence bounds."],
+  ["Rolling-origin backtest", "Pretend to stand at a past date, hide the future, forecast, compare. Repeat, moving the starting point back."],
+  ["Baseline", "The naive method the model has to beat to justify itself. If it does not beat it, the model is not earning its place."],
+  ["MAE", "Mean absolute error. How far off you are on average, in real units, with no cancelling between over- and under-shoots."],
+  ["EAV schema", "Entity-attribute-value. One row per fact instead of one column per attribute, so adding a data source never changes the schema."],
+  ["Upsert", "Insert, and update instead of failing if the row already exists. Makes every load safely repeatable."],
+  ["Row-level security", "Access rules inside Postgres. Here: public read, writes only with the service key."],
+];
+
 function Section({
   title,
   eyebrow,
@@ -116,7 +131,7 @@ function ArchitectureDiagram() {
     <svg
       viewBox="0 0 700 300"
       role="img"
-      aria-label="Architecture: Modal writes indicators and forecasts to Supabase, Lovable reads from Supabase, and an AI gateway supplies chat answers to Lovable."
+      aria-label="Architecture: Python pipeline writes indicators and forecasts to Supabase, Lovable reads from Supabase, and an AI gateway supplies chat answers to Lovable."
       className="w-full"
     >
       {boxes.map((b) => (
@@ -547,23 +562,36 @@ function SystemPage() {
                 </table>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                TimesFM is best in 3 of the 4 windows and beats the strongest baseline by 19% on
-                average. On the shape factor alone it cuts error by 68% against persistence, but only
-                12% on the level — the shape has learnable structure, the level is driven by gas and
-                is largely unpredictable.
+                TimesFM is best in 6 of the 10 windows and has both the lowest mean error and the
+                lowest relative error. The margin over the strongest baseline — a 30-day moving
+                average — is 9%. Real, but not a landslide.
               </p>
+              <div className="rounded-2xl border border-border bg-highlight-soft p-5">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  Where it wins, and where it does not
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">
+                  Split by factor across all ten windows, the picture is sharper than the headline.
+                  On the shape factor TimesFM cuts error by 58% against persistence (0.108 versus
+                  0.260). On the level factor it is 13.5% worse than persistence (46.9 versus
+                  41.3 EUR/MWh). The intraday shape has learnable structure; the price level is
+                  driven by gas and is close to a random walk. This is also why the summer-2022
+                  window is the one clear defeat: during the gas crisis, repeating the last value is
+                  the correct answer to a regime nobody has seen before.
+                </p>
+              </div>
               <div className="rounded-2xl border border-border bg-highlight-soft p-5">
                 <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                   Caveat
                 </p>
                 <p className="mt-2 text-sm leading-relaxed">
-                  29.9 EUR/MWh against spreads averaging 90 to 100 is roughly a third of relative
+                  29.4 EUR/MWh against spreads averaging 90 to 100 is roughly a third of relative
                   error. Good enough to rank zones, not to build a business plan on.
                 </p>
               </div>
             </Section>
 
-            <Section eyebrow="06" title="Data sources">
+            <Section eyebrow="07" title="Data sources">
               <div className="overflow-x-auto rounded-2xl border border-border bg-card p-2 shadow-soft">
                 <table className="w-full text-sm">
                   <thead>
@@ -586,7 +614,7 @@ function SystemPage() {
               </div>
             </Section>
 
-            <Section eyebrow="07" title="Known limits">
+            <Section eyebrow="08" title="Known limits">
               <div className="rounded-2xl border-2 border-border bg-panel p-6 shadow-panel">
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   What this system does not know matters as much as what it scores.

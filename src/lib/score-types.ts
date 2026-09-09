@@ -59,7 +59,7 @@ export type ParsedBreakdown = {
 };
 
 export function parseBreakdown(breakdown: Breakdown): ParsedBreakdown {
-  const factors: Array<[string, BreakdownPart]> = [];
+  const factors: Array<[string, BreakdownPart, string]> = [];
   const context: Array<[string, string]> = [];
   const missing: string[] = [];
 

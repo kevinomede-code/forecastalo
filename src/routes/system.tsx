@@ -456,8 +456,16 @@ function SystemPage() {
                     shock from being learned as seasonality, and avoids the heavy tail the relative
                     spread would have.
                   </p>
-                  <div className="mt-5">
-                    <DecompositionDiagram />
+                  <div className="mt-5 space-y-3">
+                    <DailyCurveDiagram />
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      A typical day on the day-ahead market. The battery buys at the trough and sells
+                      at the peak; the spread is its gross revenue per cycle, before round-trip
+                      efficiency, degradation and grid charges.
+                    </p>
+                    <div className="pt-2">
+                      <DecompositionDiagram />
+                    </div>
                   </div>
                 </article>
 
@@ -476,17 +484,35 @@ function SystemPage() {
               </div>
             </Section>
 
-            <Section eyebrow="05" title="Does the forecast actually work">
+            <Section eyebrow="05" title="Key terms">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {KEY_TERMS.map(([term, definition]) => (
+                  <div
+                    key={term}
+                    className="rounded-2xl border border-border bg-card p-4 shadow-soft"
+                  >
+                    <p className="text-sm font-semibold">{term}</p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                      {definition}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </Section>
+
+            <Section eyebrow="06" title="Does the forecast actually work">
               <div className="overflow-x-auto rounded-2xl border border-border bg-card p-2 shadow-soft">
                 <table className="w-full text-sm">
                   <caption className="px-4 py-3 text-left text-xs leading-relaxed text-muted-foreground">
-                    Mean absolute error in EUR/MWh on the reconstructed spread, 7 zones, 90-day
-                    horizon, four rolling test windows. Lower is better; the best in each row is in
-                    bold.
+                    Mean absolute error in EUR/MWh on the reconstructed spread, 90-day horizon, ten
+                    rolling-origin windows from 2019 to 2026. Each window uses only the zones that
+                    already existed at that date — Calabria became a separate bidding zone on
+                    1 January 2021. Lower is better; the best in each row is in bold.
                   </caption>
                   <thead>
                     <tr className="border-b border-border text-left text-xs text-muted-foreground">
                       <th className="px-4 py-2 font-medium">Window</th>
+                      <th className="px-4 py-2 font-medium">Spread</th>
                       <th className="px-4 py-2 font-medium">TimesFM</th>
                       <th className="px-4 py-2 font-medium">Persistence</th>
                       <th className="px-4 py-2 font-medium">Seasonal</th>
@@ -501,6 +527,9 @@ function SystemPage() {
                           className={`px-4 py-2.5 ${row.strong ? "font-semibold" : "text-muted-foreground"}`}
                         >
                           {row.window}
+                        </td>
+                        <td className="px-4 py-2.5 tabular-nums text-muted-foreground">
+                          {row.spread}
                         </td>
                         {row.cells.map((cell, i) => (
                           <td

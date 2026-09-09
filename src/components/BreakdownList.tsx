@@ -1,12 +1,47 @@
-import { formatPart, formatWeight, parseBreakdown, type Breakdown } from "@/lib/score-types";
+import {
+  formatPart,
+  formatWeight,
+  horizonWeightFor,
+  parseBreakdown,
+  type Breakdown,
+  type BreakdownPart,
+} from "@/lib/score-types";
 
-export default function BreakdownList({ breakdown }: { breakdown: Breakdown }) {
+function keyOf(label: string) {
+  return label;
+}
+
+export default function BreakdownList({
+  breakdown,
+  play,
+  horizon,
+}: {
+  breakdown: Breakdown;
+  play?: string;
+  horizon?: string;
+}) {
   const { factors, context, missing } = parseBreakdown(breakdown);
   if (factors.length === 0 && context.length === 0 && missing.length === 0) return null;
 
+  function weightCell(rawKey: string, part: BreakdownPart) {
+    const active = play && horizon ? horizonWeightFor(play, horizon, rawKey) : null;
+    if (active == null) {
+      return <span className="ml-2 text-muted-foreground">{formatWeight(part)}</span>;
+    }
+    const stored = part.weight;
+    const changed = stored != null && Math.abs(stored - active) > 0.0005;
+    const caret = changed && stored != null ? (active > stored ? "▲" : "▼") : null;
+    return (
+      <span className={changed ? "ml-2 font-medium text-highlight" : "ml-2 text-muted-foreground"}>
+        weight {Math.round(active * 100)}%
+        {caret ? <span className="ml-1 text-[10px]">{caret}</span> : null}
+      </span>
+    );
+  }
+
   return (
     <div className="mt-3">
-      {factors.map(([label, part]) => (
+      {factors.map(([label, part, rawKey]) => (
         <div
           key={label}
           className="flex items-baseline justify-between gap-4 border-t border-border py-1.5"
@@ -14,7 +49,7 @@ export default function BreakdownList({ breakdown }: { breakdown: Breakdown }) {
           <span className="text-xs font-medium text-muted-foreground">{label}</span>
           <span className="text-right text-xs">
             <span className="font-medium text-foreground">{formatPart(part)}</span>
-            <span className="ml-2 text-muted-foreground">{formatWeight(part)}</span>
+            {weightCell(keyOf(rawKey), part)}
           </span>
         </div>
       ))}

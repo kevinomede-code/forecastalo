@@ -53,13 +53,13 @@ function isPart(value: unknown): value is BreakdownPart {
 }
 
 export type ParsedBreakdown = {
-  factors: Array<[string, BreakdownPart]>;
+  factors: Array<[string, BreakdownPart, string]>;
   context: Array<[string, string]>;
   missing: string[];
 };
 
 export function parseBreakdown(breakdown: Breakdown): ParsedBreakdown {
-  const factors: Array<[string, BreakdownPart]> = [];
+  const factors: Array<[string, BreakdownPart, string]> = [];
   const context: Array<[string, string]> = [];
   const missing: string[] = [];
 
@@ -75,7 +75,7 @@ export function parseBreakdown(breakdown: Breakdown): ParsedBreakdown {
       }
       continue;
     }
-    if (isPart(value)) factors.push([labelFor(key), value]);
+    if (isPart(value)) factors.push([labelFor(key), value, key]);
   }
 
   factors.sort((a, b) => (b[1].weight ?? 0) - (a[1].weight ?? 0));
@@ -92,4 +92,55 @@ export function formatPart(part: BreakdownPart) {
 
 export function formatWeight(part: BreakdownPart) {
   return part.weight == null ? "" : `weight ${Math.round(part.weight * 100)}%`;
+}
+
+// Horizon = investment holding period, not forecast horizon. The 90-day price
+// forecast is the same in every case; what changes is how much it is trusted.
+// Short horizon: lean on what is measurable now. Long horizon: lean on what
+// compounds, and discount a point forecast that far out.
+export const HORIZON_WEIGHTS: Record<string, Record<string, Record<string, number>>> = {
+  housing_energy: {
+    // Solar keeps weight 0.30 at every horizon: the sun does not care how long you hold the asset.
+    "1": { solar: 0.30, market_size: 0.35, building_stock: 0.25, demographics: 0.10 },
+    "3": { solar: 0.30, market_size: 0.25, building_stock: 0.25, demographics: 0.20 },
+    "5": { solar: 0.30, market_size: 0.15, building_stock: 0.25, demographics: 0.30 },
+  },
+  battery_storage: {
+    "1": { forecast_spread: 0.65, downside: 0.25, momentum: 0.10 },
+    "3": { forecast_spread: 0.55, downside: 0.25, momentum: 0.20 },
+    "5": { forecast_spread: 0.35, downside: 0.30, momentum: 0.35 },
+  },
+};
+
+export function horizonWeightFor(play: string, horizon: string, key: string): number | null {
+  const weights = HORIZON_WEIGHTS[play]?.[horizon];
+  if (!weights) return null;
+  const weight = weights[key];
+  return typeof weight === "number" ? weight : null;
+}
+
+export function horizonScore(
+  play: string,
+  breakdown: Breakdown,
+  horizon: string,
+  fallback: number | null,
+): number {
+  const weights = HORIZON_WEIGHTS[play]?.[horizon];
+  if (!weights) return fallback ?? 0;
+
+  const source = (breakdown ?? {}) as Record<string, unknown>;
+  let weighted = 0;
+  let total = 0;
+
+  for (const [key, weight] of Object.entries(weights)) {
+    const part = source[key];
+    if (!isPart(part)) continue;
+    const normalised = part.normalised;
+    if (typeof normalised !== "number" || !Number.isFinite(normalised)) continue;
+    weighted += weight * normalised;
+    total += weight;
+  }
+
+  if (total === 0) return fallback ?? 0;
+  return Math.round((100 * weighted) / total * 10) / 10;
 }

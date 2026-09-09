@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { ClientOnly } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import type { MapFocus, ScoreRow } from "@/lib/score-types";
+import { horizonScore, type MapFocus, type ScoreRow } from "@/lib/score-types";
 import {
   Select,
   SelectContent,
@@ -121,7 +121,16 @@ function ScreeningPage() {
     },
   });
 
-  const results = query.data ?? [];
+  const activePlay = request?.play ?? play;
+  const results = useMemo(() => {
+    const rows = query.data ?? [];
+    return rows
+      .map((row) => ({
+        ...row,
+        score_total: horizonScore(activePlay, row.breakdown, horizon, row.score_total),
+      }))
+      .sort((a, b) => (b.score_total ?? 0) - (a.score_total ?? 0));
+  }, [query.data, activePlay, horizon]);
   const topResults = results.slice(0, 50);
   const isMarketZone = levelFor(play, geography) === "market_zone";
 
@@ -186,6 +195,11 @@ function ScreeningPage() {
                 </Field>
               </div>
 
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
+                Horizon is the investment holding period. It reweights the score — the 90-day price
+                forecast itself does not change.
+              </p>
+
               <Button
                 className="w-full rounded-xl"
                 disabled={query.isFetching}
@@ -240,7 +254,11 @@ function ScreeningPage() {
                           {score.toFixed(1)}
                         </span>
                       </div>
-                      <BreakdownList breakdown={row.breakdown} />
+                      <BreakdownList
+                        breakdown={row.breakdown}
+                        play={activePlay}
+                        horizon={horizon}
+                      />
                       <p className="mt-2 text-sm text-muted-foreground">
                         {row.recommendation ?? "No recommendation available."}
                       </p>

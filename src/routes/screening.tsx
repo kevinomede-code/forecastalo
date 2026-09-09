@@ -121,7 +121,16 @@ function ScreeningPage() {
     },
   });
 
-  const results = query.data ?? [];
+  const activePlay = request?.play ?? play;
+  const results = useMemo(() => {
+    const rows = query.data ?? [];
+    return rows
+      .map((row) => ({
+        ...row,
+        score_total: horizonScore(activePlay, row.breakdown, horizon, row.score_total),
+      }))
+      .sort((a, b) => (b.score_total ?? 0) - (a.score_total ?? 0));
+  }, [query.data, activePlay, horizon]);
   const topResults = results.slice(0, 50);
   const isMarketZone = levelFor(play, geography) === "market_zone";
 

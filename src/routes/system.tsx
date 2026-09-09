@@ -62,7 +62,7 @@ const LIMITS = [
   "The model does not beat a naive forecast on the price level — only on the intraday shape. Any use of these numbers should lean on the ranking between zones, not on the absolute spread value.",
   "Electricity prices are set per market zone. There are only 7. There is no sub-zonal precision, and any map suggesting otherwise would be false precision.",
   "Building stock exists only at province level; municipalities inherit their province's value.",
-  "The scoring weights are working assumptions, not a calibrated model. No investment return data exists to tune them against.",
+  "The scoring weights are working assumptions, not a calibrated model — no investment return data exists to tune them against. The Horizon control shifts those weights on an argument, not on evidence: at 1 year the 90-day spread forecast carries 65% of the battery score, at 5 years only 35%, because a point forecast that far out is not worth trusting.",
   "Nothing here is investment advice.",
 ];
 

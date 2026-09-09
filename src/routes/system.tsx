@@ -25,25 +25,32 @@ export const Route = createFileRoute("/system")({
 
 const COUNTERS = [
   { value: "1,295", label: "zones" },
-  { value: "162,637", label: "indicator rows" },
+  { value: "188,917", label: "indicator rows" },
+  { value: "3,896", label: "days of prices" },
   { value: "1,890", label: "forecasts" },
-  { value: "2", label: "investment plays" },
 ];
 
-const BACKTEST: Array<{ window: string; cells: string[]; best: number; strong?: boolean }> = [
-  { window: "last 90 days", cells: ["35.9", "55.5", "45.4", "43.1", "38.4"], best: 0 },
-  { window: "−90 days", cells: ["39.9", "53.5", "40.0", "57.9", "50.8"], best: 0 },
-  { window: "−180 days", cells: ["20.4", "26.3", "33.8", "19.8", "36.1"], best: 3 },
-  { window: "−270 days", cells: ["23.5", "41.0", "30.1", "27.7", "28.3"], best: 0 },
-  { window: "average", cells: ["29.9", "44.1", "37.3", "37.1", "38.4"], best: 0, strong: true },
+const BACKTEST: Array<{ window: string; spread: string; cells: string[]; best: number; strong?: boolean }> = [
+  { window: "2026-06 → 08", spread: "108", cells: ["35.9", "55.5", "45.4", "43.1", "38.4"], best: 0 },
+  { window: "2025-12 → 03", spread: "53", cells: ["20.4", "26.3", "33.8", "19.8", "36.1"], best: 3 },
+  { window: "2025-06 → 09", spread: "79", cells: ["21.9", "49.7", "33.8", "40.9", "25.9"], best: 0 },
+  { window: "2024-12 → 03", spread: "74", cells: ["21.9", "65.7", "27.7", "21.8", "25.5"], best: 3 },
+  { window: "2024-06 → 09", spread: "94", cells: ["31.1", "38.7", "34.9", "26.2", "28.4"], best: 3 },
+  { window: "2023-06 → 09", spread: "76", cells: ["21.2", "33.4", "142.2", "22.5", "90.9"], best: 0 },
+  { window: "2022-06 → 09", spread: "224", cells: ["109.9", "81.4", "176.0", "112.9", "122.9"], best: 1 },
+  { window: "2021-06 → 09", spread: "50", cells: ["15.2", "17.8", "23.4", "16.6", "17.0"], best: 0 },
+  { window: "2020-05 → 08", spread: "26", cells: ["7.4", "11.2", "12.3", "7.6", "10.1"], best: 0 },
+  { window: "2019-04 → 07", spread: "34", cells: ["9.1", "24.0", "14.3", "11.4", "10.3"], best: 0 },
+  { window: "average", spread: "—", cells: ["29.4", "40.4", "54.4", "32.3", "40.5"], best: 0, strong: true },
+  { window: "relative error", spread: "—", cells: ["32%", "52%", "63%", "36%", "48%"], best: 0, strong: true },
 ];
 
 const SOURCES: Array<[string, string, string]> = [
   ["PVGIS (JRC)", "Photovoltaic yield and irradiation", "In use — open, no key"],
   ["ISTAT SDMX", "Population 2001–2026", "In use — open, no key"],
   ["ISTAT permanent census", "Dwellings by construction period", "In use — province level only"],
-  ["GME", "Hourly zonal electricity prices 2016–2026", "In use — manual download"],
-  ["ENTSO-E", "Day-ahead prices", "Token requested — code ready"],
+  ["GME", "Hourly zonal prices, 2016–2026, gap-free", "In use — manual download"],
+  ["ENTSO-E", "Day-ahead prices", "In use — API token active"],
   ["SIAPE (ENEA)", "Energy performance certificates", "Blocked — no public API"],
   ["OMI (Agenzia delle Entrate)", "Property prices", "Excluded — licence not open"],
   ["GSE Atlaimpianti", "Installed PV", "Portal offline"],
@@ -52,6 +59,7 @@ const SOURCES: Array<[string, string, string]> = [
 
 const LIMITS = [
   "The battery score contains no grid connection data, no local PV saturation and no permitting or land cost — and those decide whether a site is actually buildable. It is a filter on which market zone to study, not a site recommendation.",
+  "The model does not beat a naive forecast on the price level — only on the intraday shape. Any use of these numbers should lean on the ranking between zones, not on the absolute spread value.",
   "Electricity prices are set per market zone. There are only 7. There is no sub-zonal precision, and any map suggesting otherwise would be false precision.",
   "Building stock exists only at province level; municipalities inherit their province's value.",
   "The scoring weights are working assumptions, not a calibrated model. No investment return data exists to tune them against.",
@@ -84,15 +92,15 @@ function ArchitectureDiagram() {
   const boxes = [
     {
       x: 8,
-      title: "Modal",
-      sub: "Python, serverless",
+      title: "Python pipeline",
+      sub: "ingestion + forecasting",
       lines: ["ETL from public sources", "TimesFM 3.0 forecasting"],
       note: "Runs on CPU, no GPU needed.",
     },
     {
       x: 238,
       title: "Supabase",
-      sub: "Postgres",
+      sub: "Postgres, managed by Lovable",
       lines: ["zones · indicators · forecasts", "scores · knowledge graph"],
       note: "Row-level security, public read, no writes.",
     },
@@ -218,7 +226,7 @@ function ArchitectureDiagram() {
 function PipelineDiagram() {
   const stages: Array<[string, string[]]> = [
     ["Public sources", ["PVGIS, ISTAT, GME"]],
-    ["Ingestion", ["Python on Modal"]],
+    ["Ingestion", ["Python, on CPU"]],
     ["Indicators", ["one generic table"]],
     ["Scoring and forecasting", ["explicit weights,", "TimesFM"]],
     ["Interface", ["map, chat, graph"]],
@@ -289,6 +297,35 @@ function PipelineDiagram() {
           </g>
         );
       })}
+    </svg>
+  );
+}
+
+function DailyCurveDiagram() {
+  return (
+    <svg viewBox="0 0 700 290" role="img"
+      aria-label="Schematic daily electricity price curve: a midday trough caused by solar, an evening peak, and the spread between them."
+      className="w-full">
+      <line x1={60} y1={57} x2={620} y2={57} stroke="var(--color-muted-foreground)" strokeDasharray="3 3" />
+      <line x1={60} y1={190} x2={620} y2={190} stroke="var(--color-muted-foreground)" strokeDasharray="3 3" />
+      <text x={628} y={61} fontSize={11} fill="var(--color-muted-foreground)">MAX</text>
+      <text x={628} y={194} fontSize={11} fill="var(--color-muted-foreground)">MIN</text>
+      <polyline
+        points="70,131 93,137 116,143 139,146 162,148 185,143 208,125 231,107 254,113 277,131 300,156 323,174 347,187 370,190 393,183 416,162 439,131 462,94 485,63 508,57 531,76 554,94 577,113 600,125"
+        fill="none" stroke="var(--color-foreground)" strokeWidth={2} />
+      <circle cx={370} cy={190} r={4} fill="var(--color-foreground)" />
+      <circle cx={508} cy={57} r={4} fill="var(--color-foreground)" />
+      <line x1={600} y1={57} x2={600} y2={190} stroke="var(--color-foreground)" strokeWidth={1.5} />
+      <line x1={594} y1={57} x2={606} y2={57} stroke="var(--color-foreground)" strokeWidth={1.5} />
+      <line x1={594} y1={190} x2={606} y2={190} stroke="var(--color-foreground)" strokeWidth={1.5} />
+      <text x={612} y={128} fontSize={11} fill="var(--color-foreground)">spread</text>
+      <text x={370} y={214} textAnchor="middle" fontSize={10.5} fill="var(--color-muted-foreground)">midday — solar pushes the price down</text>
+      <text x={508} y={42} textAnchor="middle" fontSize={10.5} fill="var(--color-muted-foreground)">evening peak</text>
+      <line x1={60} y1={240} x2={620} y2={240} stroke="var(--color-border)" />
+      <text x={60} y={256} fontSize={10} fill="var(--color-muted-foreground)">00:00</text>
+      <text x={335} y={256} fontSize={10} fill="var(--color-muted-foreground)">12:00</text>
+      <text x={592} y={256} fontSize={10} fill="var(--color-muted-foreground)">24:00</text>
+      <text x={60} y={282} fontSize={13} fill="var(--color-foreground)">spread = MAX × (1 − MIN/MAX) = level × shape</text>
     </svg>
   );
 }

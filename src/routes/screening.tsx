@@ -195,6 +195,11 @@ function ScreeningPage() {
                 </Field>
               </div>
 
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
+                Horizon is the investment holding period. It reweights the score — the 90-day price
+                forecast itself does not change.
+              </p>
+
               <Button
                 className="w-full rounded-xl"
                 disabled={query.isFetching}
@@ -249,7 +254,11 @@ function ScreeningPage() {
                           {score.toFixed(1)}
                         </span>
                       </div>
-                      <BreakdownList breakdown={row.breakdown} />
+                      <BreakdownList
+                        breakdown={row.breakdown}
+                        play={activePlay}
+                        horizon={horizon}
+                      />
                       <p className="mt-2 text-sm text-muted-foreground">
                         {row.recommendation ?? "No recommendation available."}
                       </p>

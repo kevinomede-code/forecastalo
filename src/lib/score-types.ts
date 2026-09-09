@@ -75,7 +75,7 @@ export function parseBreakdown(breakdown: Breakdown): ParsedBreakdown {
       }
       continue;
     }
-    if (isPart(value)) factors.push([labelFor(key), value]);
+    if (isPart(value)) factors.push([labelFor(key), value, key]);
   }
 
   factors.sort((a, b) => (b[1].weight ?? 0) - (a[1].weight ?? 0));

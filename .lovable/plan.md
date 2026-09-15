@@ -47,3 +47,7 @@ New component `src/components/ZoneEconomics.tsx`: renders 3–4 metric tiles (CA
 
 - `bunx tsgo --noEmit`, production build
 - Playwright: calculate → select 3 zones → compare panel shows side-by-side factors + economics; "Ask about these zones" lands in chat with the question prefilled and sent; no console errors
+
+## Later (not in this plan)
+
+- Make economics inputs live: retail electricity price (Eurostat nrg_pc_204 CSV/API, semi-annual) and heating degree days (Open-Meteo Archive, free no-key) replace the two hardcoded assumptions; battery CAPEX stays a stated constant (no reliable API).

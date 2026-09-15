@@ -197,6 +197,9 @@ export type Database = {
         Row: {
           created_at: string | null
           detail: string | null
+          embedded_at: string | null
+          embedding: string | null
+          embedding_model: string | null
           id: string
           kind: string
           refs: Json | null
@@ -207,6 +210,9 @@ export type Database = {
         Insert: {
           created_at?: string | null
           detail?: string | null
+          embedded_at?: string | null
+          embedding?: string | null
+          embedding_model?: string | null
           id?: string
           kind: string
           refs?: Json | null
@@ -217,6 +223,9 @@ export type Database = {
         Update: {
           created_at?: string | null
           detail?: string | null
+          embedded_at?: string | null
+          embedding?: string | null
+          embedding_model?: string | null
           id?: string
           kind?: string
           refs?: Json | null
@@ -321,6 +330,15 @@ export type Database = {
         Returns: Json
       }
       kg_search: { Args: { max_nodes?: number; q: string }; Returns: Json }
+      kg_search_hybrid: {
+        Args: {
+          max_nodes?: number
+          min_similarity?: number
+          q: string
+          query_embedding: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

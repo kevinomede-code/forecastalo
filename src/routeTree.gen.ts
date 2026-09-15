@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as GraphRouteImport } from './routes/graph'
 import { Route as ScreeningRouteImport } from './routes/screening'
 import { Route as SystemRouteImport } from './routes/system'
+import { Route as ApiPublicKgReindexRouteImport } from './routes/api/public/kg-reindex'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const SystemRoute = SystemRouteImport.update({
   path: '/system',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicKgReindexRoute = ApiPublicKgReindexRouteImport.update({
+  id: '/api/public/kg-reindex',
+  path: '/api/public/kg-reindex',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/graph': typeof GraphRoute
   '/screening': typeof ScreeningRoute
   '/system': typeof SystemRoute
+  '/api/public/kg-reindex': typeof ApiPublicKgReindexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/graph': typeof GraphRoute
   '/screening': typeof ScreeningRoute
   '/system': typeof SystemRoute
+  '/api/public/kg-reindex': typeof ApiPublicKgReindexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,21 @@ export interface FileRoutesById {
   '/graph': typeof GraphRoute
   '/screening': typeof ScreeningRoute
   '/system': typeof SystemRoute
+  '/api/public/kg-reindex': typeof ApiPublicKgReindexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/graph' | '/screening' | '/system'
+  fullPaths:
+    '/' | '/graph' | '/screening' | '/system' | '/api/public/kg-reindex'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/graph' | '/screening' | '/system'
-  id: '__root__' | '/' | '/graph' | '/screening' | '/system'
+  to: '/' | '/graph' | '/screening' | '/system' | '/api/public/kg-reindex'
+  id:
+    | '__root__'
+    | '/'
+    | '/graph'
+    | '/screening'
+    | '/system'
+    | '/api/public/kg-reindex'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +83,7 @@ export interface RootRouteChildren {
   GraphRoute: typeof GraphRoute
   ScreeningRoute: typeof ScreeningRoute
   SystemRoute: typeof SystemRoute
+  ApiPublicKgReindexRoute: typeof ApiPublicKgReindexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +116,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SystemRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/kg-reindex': {
+      id: '/api/public/kg-reindex'
+      path: '/api/public/kg-reindex'
+      fullPath: '/api/public/kg-reindex'
+      preLoaderRoute: typeof ApiPublicKgReindexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +131,7 @@ const rootRouteChildren: RootRouteChildren = {
   GraphRoute: GraphRoute,
   ScreeningRoute: ScreeningRoute,
   SystemRoute: SystemRoute,
+  ApiPublicKgReindexRoute: ApiPublicKgReindexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

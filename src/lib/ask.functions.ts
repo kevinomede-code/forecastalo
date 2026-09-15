@@ -198,10 +198,28 @@ export const askQuestion = createServerFn({ method: "POST" })
       .order("score_total", { ascending: false })
       .limit(15);
 
-    const [{ data: statsData }, { data: kgData }] = await Promise.all([
+    // Notes are retrieved semantically (pgvector) with the keyword ranking as a
+    // union partner, so paraphrases and Italian questions still find the note.
+    const { embedQuestion } = await import("./kg-embed.server");
+    const [{ data: statsData }, questionEmbedding] = await Promise.all([
       supabaseAdmin.rpc("context_stats", { p_play: play, p_level: level }),
-      supabaseAdmin.rpc("kg_search", { q: question, max_nodes: 6 }),
+      embedQuestion(question),
     ]);
+
+    let kgData: unknown = null;
+    if (questionEmbedding) {
+      const { data, error } = await supabaseAdmin.rpc("kg_search_hybrid", {
+        q: question,
+        query_embedding: JSON.stringify(questionEmbedding) as never,
+        max_nodes: 6,
+      });
+      if (error) console.error("[ask] kg_search_hybrid error", error);
+      kgData = data ?? null;
+    }
+    if (!kgData) {
+      const { data } = await supabaseAdmin.rpc("kg_search", { q: question, max_nodes: 6 });
+      kgData = data ?? null;
+    }
 
     const matchedNotes = (
       (kgData as { matched?: unknown } | null)?.matched ?? []

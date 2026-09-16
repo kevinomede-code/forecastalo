@@ -16,6 +16,7 @@ import {
 import AppSidebar from "@/components/AppSidebar";
 import BreakdownList from "@/components/BreakdownList";
 import SpreadChart from "@/components/SpreadChart";
+import ZoneEconomics from "@/components/ZoneEconomics";
 
 const ScoreMap = lazy(() => import("@/components/ScoreMap"));
 
@@ -268,6 +269,16 @@ function ScreeningPage() {
               </ul>
             </div>
           </div>
+
+          {selected?.zones ? (
+            <ZoneEconomics
+              play={activePlay}
+              zoneId={selected.zone_id}
+              zoneName={selected.zones.name}
+              breakdown={selected.breakdown}
+              horizon={horizon}
+            />
+          ) : null}
 
           {isMarketZone && selected?.zones ? (
             <SpreadChart zoneId={selected.zone_id} zoneName={selected.zones.name} />

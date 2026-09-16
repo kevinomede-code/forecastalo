@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import {
   Area,
   CartesianGrid,
@@ -10,14 +9,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
+import { useSpreadSeries } from "@/lib/spread-series";
 
-type Point = {
-  period: string;
-  actual: number | null;
-  forecast: number | null;
-  band: [number, number] | null;
-};
 
 export default function SpreadChart({
   zoneId,

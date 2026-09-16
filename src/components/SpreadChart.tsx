@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import {
   Area,
   CartesianGrid,
@@ -10,14 +9,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
+import { useSpreadSeries } from "@/lib/spread-series";
 
-type Point = {
-  period: string;
-  actual: number | null;
-  forecast: number | null;
-  band: [number, number] | null;
-};
 
 export default function SpreadChart({
   zoneId,
@@ -26,56 +19,8 @@ export default function SpreadChart({
   zoneId: string;
   zoneName: string;
 }) {
-  const query = useQuery({
-    queryKey: ["spread-chart", zoneId],
-    queryFn: async () => {
-      const [actualRes, forecastRes] = await Promise.all([
-        supabase
-          .from("indicators")
-          .select("period, value")
-          .eq("zone_id", zoneId)
-          .eq("indicator_code", "price_spread_eur_mwh")
-          .order("period", { ascending: false })
-          .limit(120),
-        supabase
-          .from("forecasts")
-          .select("period, value_forecast, lower_bound, upper_bound")
-          .eq("zone_id", zoneId)
-          .eq("indicator_code", "price_spread_eur_mwh")
-          .eq("model_version", "timesfm-3.0")
-          .order("period", { ascending: true })
-          .limit(90),
-      ]);
-      if (actualRes.error) throw actualRes.error;
-      if (forecastRes.error) throw forecastRes.error;
+  const query = useSpreadSeries(zoneId);
 
-      const actuals = (actualRes.data ?? []).slice().reverse();
-      const points: Point[] = actuals.map((row) => ({
-        period: String(row.period),
-        actual: row.value == null ? null : Number(row.value),
-        forecast: null,
-        band: null,
-      }));
-
-      const last = points[points.length - 1];
-      const boundary = last?.period ?? null;
-      if (last) last.forecast = last.actual;
-
-      for (const row of forecastRes.data ?? []) {
-        points.push({
-          period: String(row.period),
-          actual: null,
-          forecast: row.value_forecast == null ? null : Number(row.value_forecast),
-          band:
-            row.lower_bound == null || row.upper_bound == null
-              ? null
-              : [Number(row.lower_bound), Number(row.upper_bound)],
-        });
-      }
-
-      return { points, boundary };
-    },
-  });
 
   const points = query.data?.points ?? [];
 

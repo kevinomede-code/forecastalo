@@ -24,7 +24,7 @@ export const Route = createFileRoute("/system")({
 });
 
 const COUNTERS = [
-  { value: "1,295", label: "zones" },
+  { value: "944", label: "zones scored" },
   { value: "188,917", label: "indicator rows" },
   { value: "3,896", label: "days of prices" },
   { value: "1,890", label: "forecasts" },
@@ -51,7 +51,7 @@ const SOURCES: Array<[string, string, string]> = [
   ["ISTAT permanent census", "Dwellings by construction period", "In use — province level only"],
   ["GME", "Hourly zonal prices, 2016–2026, gap-free", "In use — manual download"],
   ["ENTSO-E", "Day-ahead prices", "In use — API token active"],
-  ["SIAPE (ENEA)", "Energy performance certificates", "Blocked — no public API"],
+  ["SIAPE (ENEA)", "Energy performance certificates", "Inactive — no public API, zero rows"],
   ["OMI (Agenzia delle Entrate)", "Property prices", "Excluded — licence not open"],
   ["GSE Atlaimpianti", "Installed PV", "Portal offline"],
   ["Terna", "Grid and connection queues", "To evaluate"],
@@ -61,7 +61,7 @@ const LIMITS = [
   "The battery score contains no grid connection data, no local PV saturation and no permitting or land cost — and those decide whether a site is actually buildable. It is a filter on which market zone to study, not a site recommendation.",
   "The model does not beat a naive forecast on the price level — only on the intraday shape. Any use of these numbers should lean on the ranking between zones, not on the absolute spread value.",
   "Electricity prices are set per market zone. There are only 7. There is no sub-zonal precision, and any map suggesting otherwise would be false precision.",
-  "Building stock exists only at province level; municipalities inherit their province's value.",
+  "Building stock exists only at province level, so it is the same value for every municipality in a province — a quarter of the municipal score carries no municipal information, and the breakdown flags it with province_level. Municipalities under 500 residents are not scored at all: below that size the ten-year population change is small-number noise, not a trend.",
   "The scoring weights are working assumptions, not a calibrated model — no investment return data exists to tune them against. The Horizon control shifts those weights on an argument, not on evidence: at 1 year the 90-day spread forecast carries 65% of the battery score, at 5 years only 35%, because a point forecast that far out is not worth trusting.",
   "Nothing here is investment advice.",
 ];

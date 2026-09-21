@@ -44,10 +44,8 @@ export const Route = createFileRoute("/screening")({
 });
 
 const PLAYS = [
-  { value: "housing_energy", label: "Housing + Energy (PV + heat pump)", disabled: false },
-  { value: "battery_storage", label: "Battery storage (arbitrage)", disabled: false },
-  { value: "ev_charging", label: "EV Charging & Mobility", disabled: true },
-  { value: "energy_community", label: "Energy Community", disabled: true },
+  { value: "housing_energy", label: "Housing + Energy (PV + heat pump)" },
+  { value: "battery_storage", label: "Battery storage (arbitrage)" },
 ];
 
 const GEOGRAPHIES: Record<
@@ -158,7 +156,7 @@ function ScreeningPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {PLAYS.map((p) => (
-                      <SelectItem key={p.value} value={p.value} disabled={p.disabled}>
+                      <SelectItem key={p.value} value={p.value}>
                         {p.label}
                       </SelectItem>
                     ))}

@@ -8,7 +8,7 @@ export const Route = createFileRoute("/system")({
       {
         name: "description",
         content:
-          "The architecture behind Forecastalo: open Italian data on Modal, Postgres storage, TimesFM 3.0 price forecasting and a grounded chat.",
+          "The architecture behind Forecastalo: open Italian data, Postgres storage, TimesFM 3.0 price forecasting and a grounded chat.",
       },
       { property: "og:title", content: "Forecastalo System" },
       {
@@ -25,9 +25,9 @@ export const Route = createFileRoute("/system")({
 
 const COUNTERS = [
   { value: "944", label: "zones scored" },
-  { value: "188,917", label: "indicator rows" },
+  { value: "189,753", label: "indicator rows" },
   { value: "3,896", label: "days of prices" },
-  { value: "1,890", label: "forecasts" },
+  { value: "2,520", label: "forecasts" },
 ];
 
 const BACKTEST: Array<{ window: string; spread: string; cells: string[]; best: number; strong?: boolean }> = [
@@ -72,6 +72,8 @@ const KEY_TERMS: Array<[string, string]> = [
   ["Bidding zone", "One of the 7 areas where Italy forms its electricity price. Current layout since 1 January 2021, when Calabria was split off from South."],
   ["Day-ahead market (MGP)", "The auction where energy for the following day is traded hour by hour. Every price in this project comes from it."],
   ["Spread", "Daily maximum minus daily minimum price. The gross revenue of one battery charge-discharge cycle."],
+  ["Capture rate", "The production-weighted average price divided by the simple average price. 1.0 means a plant earns exactly the market average; 0.85 means every MWh it produces is worth 15% less."],
+  ["Cannibalisation", "Solar pushes the midday price down at precisely the hours solar produces, so more solar on the grid lowers what every solar plant earns per MWh. It is measured by the capture rate falling."],
   ["Zero-shot forecasting", "The model predicts a series it was never trained on. There is no training step in this codebase."],
   ["Context and horizon", "How many past points the model is given (1,024 days) and how many future ones it is asked for (90 days)."],
   ["Quantiles", "Not a single predicted number but a distribution: the median plus percentiles, which become the confidence bounds."],
@@ -580,6 +582,21 @@ function SystemPage() {
                   driven by gas and is close to a random walk. This is also why the summer-2022
                   window is the one clear defeat: during the gas crisis, repeating the last value is
                   the correct answer to a regime nobody has seen before.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-border bg-highlight-soft p-5">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  A better target
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">
+                  The same model on the capture rate does considerably better: best in 9 of 10
+                  windows, mean absolute error 6.26 percentage points against 7.96 for the strongest
+                  baseline — a 21% margin and roughly 7% relative error, against a third on the
+                  spread. The reason is algebraic, not luck. Capture rate is a ratio of two averages
+                  over the same day, so the price level cancels out: a gas shock multiplies numerator
+                  and denominator alike and vanishes. What is left is the intraday shape, the one
+                  factor this model forecasts well. The summer-2022 window, the single clear defeat
+                  on the spread, is won here.
                 </p>
               </div>
               <div className="rounded-2xl border border-border bg-highlight-soft p-5">

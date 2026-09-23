@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Layers, Menu, MessageSquare, Network, Plus, Settings2, Trash2 } from "lucide-react";
+import { Layers, Menu, MessageSquare, Network, Plus, Settings2, Sun, Trash2 } from "lucide-react";
 import {
   deleteChat,
   loadChats,
@@ -12,6 +12,7 @@ import {
 
 const NAV = [
   { to: "/screening", label: "Screening", icon: Layers },
+  { to: "/solar", label: "Solar revenue", icon: Sun },
   { to: "/graph", label: "Knowledge", icon: Network },
   { to: "/system", label: "System", icon: Settings2 },
 ] as const;

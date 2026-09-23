@@ -51,6 +51,7 @@ const SOURCES: Array<[string, string, string]> = [
   ["ISTAT permanent census", "Dwellings by construction period", "In use — province level only"],
   ["GME", "Hourly zonal prices, 2016–2026, gap-free", "In use — manual download"],
   ["ENTSO-E", "Day-ahead prices", "In use — API token active"],
+  ["Capture rate (derived)", "Production-weighted vs simple average price", "In use — GME × PVGIS"],
   ["SIAPE (ENEA)", "Energy performance certificates", "Inactive — no public API, zero rows"],
   ["OMI (Agenzia delle Entrate)", "Property prices", "Excluded — licence not open"],
   ["GSE Atlaimpianti", "Installed PV", "Portal offline"],
@@ -63,6 +64,7 @@ const LIMITS = [
   "Electricity prices are set per market zone. There are only 7. There is no sub-zonal precision, and any map suggesting otherwise would be false precision.",
   "Building stock exists only at province level, so it is the same value for every municipality in a province — a quarter of the municipal score carries no municipal information, and the breakdown flags it with province_level. Municipalities under 500 residents are not scored at all: below that size the ten-year population change is small-number noise, not a trend.",
   "The scoring weights are working assumptions, not a calibrated model — no investment return data exists to tune them against. The Horizon control shifts those weights on an argument, not on evidence: at 1 year the 90-day spread forecast carries 65% of the battery score, at 5 years only 35%, because a point forecast that far out is not worth trusting.",
+  "The capture rate uses one representative location per market zone and a fixed climatological production profile. It measures how the price shape rewards solar, not what a specific plant with specific weather actually earned.",
   "Nothing here is investment advice.",
 ];
 

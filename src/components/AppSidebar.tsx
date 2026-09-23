@@ -17,19 +17,29 @@ const NAV = [
   { to: "/system", label: "System", icon: Settings2 },
 ] as const;
 
-export default function AppSidebar({ activeChatId }: { activeChatId?: string | null }) {
+export default function AppSidebar({
+  activeChatId,
+  compactOnMobile = false,
+}: {
+  activeChatId?: string | null;
+  compactOnMobile?: boolean;
+}) {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [chats, setChats] = useState<StoredChat[]>([]);
 
   useEffect(() => {
-    setCollapsed(loadSidebarCollapsed());
+    setCollapsed(
+      compactOnMobile && window.matchMedia("(max-width: 767px)").matches
+        ? true
+        : loadSidebarCollapsed(),
+    );
     setChats(loadChats());
     const unsubscribe = subscribeChats(() => setChats(loadChats()));
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [compactOnMobile]);
 
   function toggle() {
     setCollapsed((prev) => {

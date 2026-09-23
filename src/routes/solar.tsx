@@ -152,7 +152,7 @@ function SolarPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
-      <AppSidebar />
+      <AppSidebar compactOnMobile />
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[46rem] px-6 py-14">
           <header className="space-y-3">

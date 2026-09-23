@@ -63,6 +63,37 @@ const YEARLY_ROWS = [
   ["2026", "87.2%", "88.3%", "85.1%", "82.3%", "82.8%", "79.1%", "80.4%"],
 ] as const;
 
+const ZONE_COMMENTARY: Record<string, { kicker: string; body: string }> = {
+  Nord: {
+    kicker: "The steepest fall from the highest start",
+    body: "In 2021 a plant in Nord still earned slightly more than the market average: 101.3%. That premium is gone — 87.2% in 2026, a fall of 2.8 points a year. The seasonal split is wide, 96.1% in winter against 83.6% in summer, so the damage lands in exactly the months that produce the most. Nord also has the narrowest price spread in the country at 77 €/MWh, which is the same fact read from the other side: the zone where solar still earns the most is the zone where a battery earns the least.",
+  },
+  "Centro Nord": {
+    kicker: "The most stable zone in the country",
+    body: "The slowest decline of the seven at 2.6 points a year, and the highest capture rate left standing at 88.3%. Daily volatility is also the lowest, a standard deviation of 15.1 against 19.7 in Sardegna. Its summer-winter gap of 12.5 points looks like Nord's, but it sits on a base that has eroded less. If the question is where a merchant solar plant is least exposed to cannibalisation today, this is the answer.",
+  },
+  "Centro Sud": {
+    kicker: "A northern decline rate on a southern level",
+    body: "85.1% in 2026, falling 2.8 points a year — the same pace as Nord, from a level already 3 points lower. The summer-winter gap is the widest on the mainland at 13.1 points. With a spread of 85 €/MWh it sits close to the median of the seven zones on both metrics, which makes it a useful reference point and an unremarkable case.",
+  },
+  Sud: {
+    kicker: "The erosion is year-round, not seasonal",
+    body: "Sud falls fastest, 3.2 points a year, from 98.1% in 2021 to 82.3% in 2026. What sets it apart is the shape of the damage: the summer-winter gap is only 8.9 points, second narrowest of the seven. Elsewhere cannibalisation is a summer problem; here winter capture is already down to 91.5%. That points to structural oversupply and export constraints rather than a seasonal midday dip, and it fits a spread of 90 €/MWh, well above the north.",
+  },
+  Calabria: {
+    kicker: "Five years of history and no more",
+    body: "A separate bidding zone only since 1 January 2021, so there is nothing before that to compare against. Since then: 98.2% down to 82.8%, 3.1 points a year, with the narrowest summer-winter gap of all seven at 8.2 points. Like Sud, the erosion runs through the whole year rather than concentrating in summer. Its numbers track Sud closely on every measure, which is what you would expect from a zone carved out of it.",
+  },
+  Sicilia: {
+    kicker: "The lowest in Italy, and the only one that recovered first",
+    body: "79.1% in 2026, the lowest capture rate in the country, and the only zone with a non-monotonic history: 86.8% back in 2017 when grid isolation already separated its prices, a recovery to 95.3% by 2021 as interconnection improved, then the steepest fall of the seven back down. It also has the widest spread in Italy at 101 €/MWh. Day to day, though, capture rate and spread barely move together here (−0.11): in a congested zone both are set by the constraint rather than by each other.",
+  },
+  Sardegna: {
+    kicker: "The harshest summer of the seven",
+    body: "75.3% in summer against 90.4% in winter — a 15.1-point gap, the widest in the country — and the highest daily volatility, a standard deviation of 19.7. Its 80.4% in 2026 is second lowest. It is also the only zone where the day-to-day link between capture rate and spread is genuinely strong (−0.41): with weak interconnection a deep midday collapse both widens the arbitrage window and destroys solar revenue on the same day. Of all seven zones this is where the two plays are most visibly two sides of one trade.",
+  },
+};
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-4">
@@ -101,6 +132,7 @@ function SolarPage() {
   const nord = zones.find((zone) => zone.name === "Nord");
   const activeZoneId = selectedZoneId || nord?.id || zones[0]?.id || "";
   const activeZone = zones.find((zone) => zone.id === activeZoneId);
+  const zoneCommentary = activeZone ? ZONE_COMMENTARY[activeZone.name] : undefined;
 
   const seriesQuery = useQuery({
     queryKey: ["solar-capture-series", activeZoneId],
@@ -282,6 +314,17 @@ function SolarPage() {
               </div>
             </Section>
 
+            {zoneCommentary ? (
+              <Section title="What this zone is telling you">
+                <div className="rounded-2xl bg-highlight-soft p-5">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                    {zoneCommentary.kicker}
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed">{zoneCommentary.body}</p>
+                </div>
+              </Section>
+            ) : null}
+
             <Section title="Capture rate by year">
               <div className="overflow-x-auto rounded-2xl border border-border bg-card p-2 shadow-soft">
                 <table className="w-full text-sm">
@@ -358,6 +401,19 @@ function SolarPage() {
                   here.
                 </p>
               </div>
+            </Section>
+
+            <Section title="Two plays, one signal">
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Across the seven zones the rank correlation between capture rate and spread is −0.96.
+                Capture rate runs from 82.8% in Sicilia to 91.0% in Centro Nord; spread runs the other
+                way, from 101 €/MWh down to 77. It is almost a straight line, and it is one piece of
+                physics read from two ends: the midday collapse that destroys solar revenue is the
+                same collapse that opens the arbitrage window. Within any single zone the daily link
+                is far weaker, between −0.11 and −0.41. So the relationship is structural and
+                geographic, not a trading signal — it says where to build a battery, not when to cycle
+                it.
+              </p>
             </Section>
           </div>
         </div>

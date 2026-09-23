@@ -6,7 +6,10 @@ import type { Breakdown } from "@/lib/score-types";
 
 export const PV_SYSTEM_KWP = 6;
 export const PV_CAPEX_PER_KWP = 1800;
-export const PV_SELF_CONSUMPTION = 0.6;
+// No-storage system: without a battery a residential rooftop in Italy
+// self-consumes roughly 25–35% of production; 60% is only reached with storage,
+// which the CAPEX above does not cover.
+export const PV_SELF_CONSUMPTION = 0.35;
 export const PV_RETAIL_TARIFF_EUR_PER_KWH = 0.3;
 
 export const BATTERY_ENERGY_KWH = 2000; // 2 MWh / 2 h
@@ -58,6 +61,7 @@ export function housingEconomics(breakdown: Breakdown): Economics | null {
       `${PV_SYSTEM_KWP} kWp rooftop system at ${PV_CAPEX_PER_KWP.toLocaleString("en-GB")} €/kWp`,
       `${Math.round(yieldPerKwp)} kWh/kWp/year yield (PVGIS) → ${Math.round(production).toLocaleString("en-GB")} kWh/year`,
       `${Math.round(PV_SELF_CONSUMPTION * 100)}% self-consumption at a stated retail tariff of ${PV_RETAIL_TARIFF_EUR_PER_KWH.toFixed(2)} €/kWh`,
+      "A battery would raise self-consumption to roughly 60% and cut the payback by about a third, but it is not costed here — the CAPEX above covers panels and inverter only",
       "No discounting, no panel degradation, no maintenance cost",
     ],
     missing: [
